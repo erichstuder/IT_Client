@@ -40,6 +40,7 @@ class Client:
 				data = self.__comPortHandler.read()
 				if data is not None:
 					sessionFile.write(data)
+					sessionFile.flush()
 				if not self.__running:
 					break
 
