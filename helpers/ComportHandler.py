@@ -20,6 +20,7 @@ import serial  # install pyserial to gain access
 import sys
 #import winreg
 import logging
+import pyudev
 
 
 class ComportHandler:
@@ -28,22 +29,65 @@ class ComportHandler:
 		self.__serialPort.timeout = 0
 		self.__infoCallback = infoCallback
 
+
+	def setConnectionType(self, connectionType):
+		self.__connectionType = connectionType
+
+
+	def setVID(self, vid):
+		self.__vid = vid
+
+
+	def setPID(self, pid):
+		self.__pid = pid
+
+	
+	#def setDeviceId(self, deviceId):
+	#	self.__deviceId = deviceId
+
+
 	def setPort(self, port):
-		self.__serialPort.port = port
+		self.__port = port
+
 
 	def setBaudrate(self, baudrate):
-		self.__serialPort.baudrate = baudrate
+		self.__baudrate = baudrate
+
 
 	def __open(self):
 		if self.__serialPort.is_open:
 			return
 		
-		if self.__serialPort.port == None:
-			return
+		if self.__connectionType == None:
+			self.__infoCallback("Error: connectionType has not been set")
+		elif self.__connectionType == "USB_RS232":
+			udev = pyudev.Context()
+			devices = []
+			for d in  udev.list_devices(subsystem="tty", ID_VENDOR_ID=self.__vid):
+				if d.get("ID_MODEL_ID") == self.__pid:
+					devices += [d]
+			if len(devices) == 0:
+				self.__infoCallback("Error: no device found")
+				return
+			if len(devices) > 1:
+				self.__infoCallback("Error: more than one device found")
+				return
+			self.__serialPort.port = devices[0].device_node
 			
-		self.__serialPort.open()
-		while not self.__serialPort.is_open:
-			pass
+			self.__serialPort.open()
+			while not self.__serialPort.is_open:
+				pass
+		elif self.__connectionType == "RS232":
+			if self.__port == None:
+				return
+			self.__serialPort.port = port
+				
+			self.__serialPort.open()
+			while not self.__serialPort.is_open:
+				pass
+		else:
+			self.__infoCallback("Error: unsupported connectionType: " + self.__connectionType)
+
 
 	def write(self, data):
 		try:
@@ -54,6 +98,7 @@ class ComportHandler:
 			self.__infoCallback("Error: Could not write \"" + self.__replaceEscapes(data) + "\"")
 		except Exception as e:
 			self.__infoCallback("Unexpected exception while writing to comport: " + str(e))
+
 
 	def read(self):
 		try:
@@ -69,7 +114,8 @@ class ComportHandler:
 			pass  # connection failed: most probably a problem with the other device or just not connected
 		except Exception as e:
 			self.__infoCallback("Unexpected exception while reading from comport: " + str(e))
-	
+
+
 	def __replaceEscapes(self, text):
 		text = text.replace("\n", "\\n")
 		text = text.replace("\r", "\\r")

@@ -20,6 +20,7 @@ from helpers.ComportHandler import ComportHandler
 import threading
 import time
 import os
+import sys
 
 
 class Client:
@@ -34,7 +35,9 @@ class Client:
 		while self.__running:
 			self.__keyboardInputParser(input().strip())
 
-	def run(self):
+	def run(self, initFile=None):
+		if initFile != None:
+			self.__keyboardInputParser("run " + initFile)
 		with open("mySession.session", "a+b") as sessionFile:
 			while True:
 				data = self.__comPortHandler.read()
@@ -50,13 +53,29 @@ class Client:
 			self.__comPortHandler.getFriendlyNames()
 		el
 		"""
-		if keyboardInput.startswith("set comport "):
+		if keyboardInput.startswith("set connectionType "):
+			connectionType = keyboardInput.split(" ")[2]
+			self.__comPortHandler.setConnectionType(connectionType)
+			self.__printAnswer("connectionType set to: " + connectionType)
+		elif keyboardInput.startswith("set VID "):
+			vid = keyboardInput.split(" ")[2]
+			self.__comPortHandler.setVID(vid)
+			self.__printAnswer("VID set to: " + vid)
+		elif keyboardInput.startswith("set PID "):
+			pid = keyboardInput.split(" ")[2]
+			self.__comPortHandler.setPID(pid)
+			self.__printAnswer("PID set to: " + pid)
+		#elif keyboardInput.startswith("set deviceId "):
+		#	deviceId = keyboardInput.split(" ")[2]
+		#	self.__comPortHandler.setDeviceId(deviceId)
+		#	self.__printAnswer("deviceId set to: " + deviceId)
+		elif keyboardInput.startswith("set comport "):
 			comPort = keyboardInput.split(" ")[2]
-			self.__comPortHandler.setPort(port=comPort)
+			self.__comPortHandler.setPort(comPort)
 			self.__printAnswer("comport set to: " + comPort)
 		elif keyboardInput.startswith("set baudrate "):
 			baudrate = keyboardInput.split(" ")[2]
-			self.__comPortHandler.setBaudrate(baudrate=baudrate)
+			self.__comPortHandler.setBaudrate(baudrate)
 			self.__printAnswer("baudrate set to: " + baudrate)
 		elif keyboardInput.startswith("run "):
 			scriptFileName = keyboardInput.split(" ")[1]
@@ -80,6 +99,11 @@ class Client:
 
 
 if __name__ == "__main__":
-	os.system("mode 70,15")
-	os.system("title IT client")
-	Client().run()
+	print("client started")
+	if sys.platform.startswith("win"):
+		os.system("mode 70,15")
+		os.system("title IT client")
+	if len(sys.argv) >= 2:
+		Client().run(str(sys.argv[1]))
+	else:
+		Client().run()
