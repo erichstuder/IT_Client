@@ -172,16 +172,22 @@ class TelegramParser:
 
 	@staticmethod
 	def __parseValue(telegram, telegramNoValueType):
-		if telegram['valueType'] == 'ulong':
-			if len(telegramNoValueType) < 4:
+		if telegram['valueType'] == 'uint8':
+			size = 1
+			if len(telegramNoValueType) < size:
+				raise ValueError('not enough bytes to parse uint8')
+			telegram['value'] = struct.unpack('B', bytes(telegramNoValueType[:size]))[0]
+		elif telegram['valueType'] == 'ulong':
+			size = 4
+			if len(telegramNoValueType) < size:
 				raise ValueError('not enough bytes to parse ulong')
-			telegram['value'] = struct.unpack('L', bytes(telegramNoValueType[:4]))[0]
-			return telegramNoValueType[4:]
+			telegram['value'] = struct.unpack('L', bytes(telegramNoValueType[:size]))[0]
 		elif telegram['valueType'] == 'float':
-			if len(telegramNoValueType) < 4:
+			size = 4
+			if len(telegramNoValueType) < size:
 				raise ValueError('not enough bytes to parse float')
-			telegram['value'] = struct.unpack('f', bytes(telegramNoValueType[:4]))[0]
-			return telegramNoValueType[4:]
+			telegram['value'] = struct.unpack('f', bytes(telegramNoValueType[:size]))[0]
+		return telegramNoValueType[size:]
 
 	@staticmethod
 	def __parseTimestamp(telegram, telegramNoValue):
