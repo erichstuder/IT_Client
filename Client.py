@@ -42,11 +42,11 @@ class Client:
 		while self.__running:
 			self.__keyboardInputParser(input().strip())
 
-	def run(self, initFile=None):
+	def run(self, initFile, sessionFile):
 		if initFile != None:
 			self.__keyboardInputParser("run " + initFile)
 
-		with open("mySession.session", "a+b") as sessionFile:
+		with open(sessionFile, "a+b") as sessionFile:
 			while True:
 				data = self.__comPortHandler.read()
 				if data is not None:
@@ -119,7 +119,17 @@ if __name__ == "__main__":
 	if sys.platform.startswith("win"):
 		os.system("mode 70,15")
 		os.system("title IT client")
-	if len(sys.argv) >= 2:
-		Client().run(str(sys.argv[1]))
-	else:
-		Client().run()
+
+	initFile = None
+	sessionFile = "mySession.session"
+
+	for n in range(2, len(sys.argv), 2):
+		argName = str(sys.argv[n-1])
+		argValue = str(sys.argv[n])
+		if argName == "-initFile":
+			initFile = argValue
+		elif argName == "-sessionFile":
+			sessionFile = argValue
+
+	Client().run(initFile=initFile, sessionFile=sessionFile)
+
