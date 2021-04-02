@@ -26,7 +26,7 @@ class TelegramParser:
 	__ReplacementMarker = 0xCC
 
 	@staticmethod
-	def parseLastValidTelegram(data: bytes, valueName):
+	def parseLastValidTypeValueTelegram(data: bytes, valueName):
 		lastDataIndex = len(data)-1
 		endIndex = lastDataIndex
 		for index in range(lastDataIndex, 0, -1):
@@ -38,30 +38,30 @@ class TelegramParser:
 				telegrams = TelegramParser.__splitTelegramStream(data[startIndex:endIndex+1])
 				TelegramParser.__parse(telegrams)
 				telegram = telegrams[0]
-				if telegram["valid"] == True and telegram["valueName"] == valueName:
+				if telegram["valid"] == True and telegram["telegramType"] == "value" and telegram["valueName"] == valueName:
 					return telegram
 		return None
 
 	@staticmethod
-	def getTelegramsAfterTimestamp(data: bytes, valueName, lowestTimestamp):
-		telegrams = [];
+	def getTypeValueTelegramsAfterTimestamp(data: bytes, valueName, lowestTimestamp):
+		telegrams = []
 		lastDataIndex = len(data)-1
 		endIndex = lastDataIndex
 		for index in range(lastDataIndex, 0, -1):
 			byte = data[index]
 			if byte == TelegramParser.__TelegramEndId:
-				endIndex = index;
+				endIndex = index
 			elif byte == TelegramParser.__TelegramStartId:
-				startIndex = index;
+				startIndex = index
 				telegramsTemp = TelegramParser.__splitTelegramStream(data[startIndex:endIndex+1])
 				TelegramParser.__parse(telegramsTemp)
 				telegram = telegramsTemp[0]
-				if telegram["valid"] == True:
+				if telegram["valid"] and telegram["telegramType"] == "value":
 					if telegram["timestamp"] <= lowestTimestamp:
-						return telegrams
+						break
 					elif telegram["valueName"] == valueName:
 						telegrams.insert(0, telegram)
-		return None
+		return telegrams
 
 	@staticmethod
 	def parseStream(data: bytes):
@@ -71,7 +71,7 @@ class TelegramParser:
 
 	@staticmethod
 	def __splitTelegramStream(data):
-		telegrams = [];
+		telegrams = []
 		if len(data) == 0:
 			return telegrams
 		
@@ -108,9 +108,9 @@ class TelegramParser:
                                 else:
                                         raise ValueError('unknown telegram type')
 
-                                telegram['valid'] = True
+                                telegram["valid"] = True
                         except ValueError:
-                                telegram['valid'] = False
+                                telegram["valid"] = False
 
 	@staticmethod
 	def __parseStartAndEnd(telegramStream):
