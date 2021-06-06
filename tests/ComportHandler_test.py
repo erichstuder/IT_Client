@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # testlist
 # - test constructor
 
-import app.ComportHandler as ComportHandler
+import helpers.ComportHandler as ComportHandler
 
 
 def test_setPort(mocker):
