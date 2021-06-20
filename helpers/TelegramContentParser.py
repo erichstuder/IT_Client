@@ -60,8 +60,8 @@ class _TelegramContentParser:
 		telegram['valueType'] = valueType
 		return telegramStream[1:]
 
-	@staticmethod
-	def parseValue(telegram, telegramStream):
+	@classmethod
+	def parseValue(cls, telegram, telegramStream):
 		if telegram is None:
 			raise TelegramContentParserException('telegram is None')
 		key = 'valueType'
@@ -79,10 +79,7 @@ class _TelegramContentParser:
 				raise TelegramContentParserException('not enough bytes to parse uint8')
 			telegram['value'] = struct.unpack('B', bytes(telegramStream[:size]))[0]
 		elif valueType == 'ulong':
-			size = 4
-			if len(telegramStream) < size:
-				raise TelegramContentParserException('not enough bytes to parse ulong')
-			telegram['value'] = struct.unpack('L', bytes(telegramStream[:size]))[0]
+			telegram['value'], size = cls.__parseULong(telegramStream)
 		elif valueType == 'float':
 			size = 4
 			if len(telegramStream) < size:
@@ -92,13 +89,18 @@ class _TelegramContentParser:
 			raise TelegramContentParserException('parsing for value type \'' + str(valueType) + '\' not implemented')
 		return telegramStream[size:]
 
+	@classmethod
+	def parseTimestamp(cls, telegram, telegramStream):
+		telegram['timestamp'], size = cls.__parseULong(telegramStream)
+		return telegramStream[size:]
+
 	@staticmethod
-	def parseTimestamp(telegram, telegramStream):
+	def __parseULong(telegramStream):
 		size = 4
 		if len(telegramStream) < size:
-			raise ValueError('not enough bytes to parse timestamp')
-		telegram['timestamp'] = struct.unpack('L', bytes(telegramStream[:size]))[0]
-		return telegramStream[size:]
+			raise TelegramContentParserException('not enough bytes to parse ulong')
+		value = struct.unpack('L', bytes(telegramStream[:size]))[0]
+		return value, size
 
 	@classmethod
 	def parseString(cls, telegram, telegramStream):
