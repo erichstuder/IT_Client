@@ -75,3 +75,35 @@ def test_parseValueType(valueType, valueTypeString):
 	newStream = _TelegramContentParser.parseValueType(telegram, [valueType])
 	assert telegram['valueType'] == valueTypeString
 	assert newStream == []
+
+def test_parseValue_noTelegram():
+	with pytest.raises(TelegramContentParserException, match='telegram is None'):
+		_TelegramContentParser.parseValue(None, [])
+
+def test_parseValue_noKey():
+	with pytest.raises(TelegramContentParserException, match='telegram has no key \'valueType\''):
+		_TelegramContentParser.parseValue({}, [])
+
+def test_parseValue_unimplementedValueType():
+	with pytest.raises(TelegramContentParserException, match='parsing for value type \'None\' not implemented'):
+		_TelegramContentParser.parseValue({'valueType': None}, [])
+
+@pytest.mark.parametrize('valueTypeString', [('int8'), ('uint8'), ('ulong'), ('float')])
+def test_parseValue_noStream(valueTypeString):
+	with pytest.raises(TelegramContentParserException, match='not enough bytes to parse ' + valueTypeString):
+		_TelegramContentParser.parseValue({'valueType': valueTypeString}, [])
+
+@pytest.mark.parametrize('valueTypeString, data, result',
+			 [('int8',         [0xFE], -2),
+			  ('int8',         [0x55], 0x55),
+			  ('uint8',        [0x00], 0),
+			  ('uint8',        [0xAB], 0xAB),
+			  ('ulong',        [0x12, 0x34, 0x56, 0x78], 0x78563412),
+			  ('ulong',        [0xEE, 0xEE, 0xEE, 0xEE], 0xEEEEEEEE),
+			  ('float',        [0x00, 0x00, 0x00, 0x00], 0),
+			  ('float',        [0x22, 0x44, 0x66, 0x88], -6.929319711261567e-34),
+			 ])
+def test_parseValue(valueTypeString, data, result):
+	telegram = {'valueType': valueTypeString}
+	newStream = _TelegramContentParser().parseValue(telegram, data)
+	assert telegram['value'] == result

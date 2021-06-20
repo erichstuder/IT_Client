@@ -16,6 +16,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import struct
+
 class TelegramContentParserException(Exception):
 	pass
 
@@ -30,7 +32,7 @@ class _TelegramContentParser:
 		if len(telegramStream) < 1:
 			raise TelegramContentParserException('stream is empty')
 		telegramType = telegramTypes.get(telegramStream[0])
-		if telegramType == None:
+		if telegramType is None:
 			raise TelegramContentParserException('invalid telegram type')
 		telegram['telegramType'] = telegramType
 		newTelegramStream = telegramStream[1:]
@@ -53,28 +55,41 @@ class _TelegramContentParser:
 		if len(telegramStream) == 0:
 			raise TelegramContentParserException('no value to parse')
 		valueType = valueTypes.get(telegramStream[0])
-		if valueType == None:
+		if valueType is None:
 			raise TelegramContentParserException('invalid value type')
 		telegram['valueType'] = valueType
 		return telegramStream[1:]
 
 	@staticmethod
 	def parseValue(telegram, telegramStream):
-		if telegram['valueType'] == 'uint8':
+		if telegram is None:
+			raise TelegramContentParserException('telegram is None')
+		key = 'valueType'
+		if key not in telegram:
+			raise TelegramContentParserException('telegram has no key \'' + key + '\'')
+		valueType = telegram[key]
+		if valueType == 'int8':
 			size = 1
 			if len(telegramStream) < size:
-				raise ValueError('not enough bytes to parse uint8')
+				raise TelegramContentParserException('not enough bytes to parse int8')
+			telegram['value'] = struct.unpack('b', bytes(telegramStream[:size]))[0]
+		elif valueType == 'uint8':
+			size = 1
+			if len(telegramStream) < size:
+				raise TelegramContentParserException('not enough bytes to parse uint8')
 			telegram['value'] = struct.unpack('B', bytes(telegramStream[:size]))[0]
-		elif telegram['valueType'] == 'ulong':
+		elif valueType == 'ulong':
 			size = 4
 			if len(telegramStream) < size:
-				raise ValueError('not enough bytes to parse ulong')
+				raise TelegramContentParserException('not enough bytes to parse ulong')
 			telegram['value'] = struct.unpack('L', bytes(telegramStream[:size]))[0]
-		elif telegram['valueType'] == 'float':
+		elif valueType == 'float':
 			size = 4
 			if len(telegramStream) < size:
-				raise ValueError('not enough bytes to parse float')
+				raise TelegramContentParserException('not enough bytes to parse float')
 			telegram['value'] = struct.unpack('f', bytes(telegramStream[:size]))[0]
+		else:
+			raise TelegramContentParserException('parsing for value type \'' + str(valueType) + '\' not implemented')
 		return telegramStream[size:]
 
 	@staticmethod
