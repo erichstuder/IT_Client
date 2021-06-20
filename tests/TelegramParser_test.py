@@ -15,157 +15,45 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from helpers.TelegramParser import TelegramParser
+
 import struct
+from helpers.TelegramParser import TelegramParser
 
+def test_parseStream_noStream():
+	telegrams = TelegramParser.parseStream([])
+	assert telegrams == []
 
-class TestTelegramParser:
-    __ValidTelegram = [0xAA, 0x01] + [ord(c) for c in 'myValueName\0'] + \
-                      [0x01, 0xCC, 0xBA, 0x04, 0x03, 0x02, 0x01, 0xBB]
+def test_parseStream_invalidTelegram():
+	invalidTelegram = [7, 3, 56, 2, 1, 33]
+	telegrams = TelegramParser.parseStream(invalidTelegram)
+	assert len(telegrams) == 1
+	assert telegrams[0]['raw'] == bytes(invalidTelegram)
+	assert telegrams[0]['valid'] == False
 
-    def __setupStubs(self, mocker):
-        self.invalidTelegram = mocker.stub('invalidTelegram_stub')
-        self.telegramReceived = mocker.stub('telegramReceived_stub')
-        self.telegramParser = TelegramParser(self.telegramReceived, self.invalidTelegram)
+def test_parseStream_valueTelegram():
+	telegramTypeId = 1
+	valueName = 'myValue'
+	valueTypeId = 2
+	value = 198
+	timestamp = [0x56, 0x78, 0x90, 0x22]
+	stream = [0xAA, telegramTypeId] + [ord(c) for c in valueName] + [0, valueTypeId, value] + timestamp + [0xBB]
+	telegrams = TelegramParser.parseStream(stream)
+	assert len(telegrams) == 1
+	telegram = telegrams[0]
+	assert telegram['telegramType'] == 'value'
+	assert telegram['valueName'] == valueName
+	assert telegram['valueType'] == 'uint8'
+	assert telegram['value'] == value
+	assert telegram['timestamp'] == 0x22907856
+	assert telegram['valid'] == True
 
-    def test_parseEmptyTelegramWithoutEnd(self, mocker):
-        self.__setupStubs(mocker)
-
-        self.__parseStart()
-        self.telegramReceived.assert_not_called()
-        self.invalidTelegram.assert_not_called()
-
-        self.__parseStart()
-        self.__assertInvalidTelegram([0xAA])
-
-        self.__parseStart()
-        self.telegramReceived.assert_not_called()
-        assert self.invalidTelegram.call_count == 2
-        self.invalidTelegram.assert_called_with([0xAA])
-
-    def test_parseEmptyTelegram(self, mocker):
-        self.__setupStubs(mocker)
-
-        self.__parseStart()
-        self.telegramReceived.assert_not_called()
-        self.invalidTelegram.assert_not_called()
-        self.__parseEnd()
-        self.__assertInvalidTelegram([0xAA, 0xBB])
-
-        self.__parseStart()
-        self.telegramReceived.assert_not_called()
-        self.invalidTelegram.assert_called_once()
-        self.__parseEnd()
-        self.telegramReceived.assert_not_called()
-        assert self.invalidTelegram.call_count == 2
-        self.invalidTelegram.assert_called_with([0xAA, 0xBB])
-
-    def test_startAfterTelegramType(self, mocker):
-        self.__setupStubs(mocker)
-
-        self.__parseStart()
-        TelegramType = 0x01
-        self.__parseTelegramType(TelegramType)
-        self.telegramReceived.assert_not_called()
-        self.invalidTelegram.assert_not_called()
-        self.__parseStart()
-        self.__assertInvalidTelegram([0xAA, TelegramType])
-
-    def test_invalidTelegramType(self, mocker):
-        self.__setupStubs(mocker)
-
-        telegram = self.__telegramWithField('telegramType', 0x67)
-        self.__parseTelegram(telegram)
-        self.__assertInvalidTelegram(telegram)
-
-    def test_emptyValueName(self, mocker):
-        self.__setupStubs(mocker)
-
-        telegram = self.__telegramWithField('valueName', '')
-        self.__parseTelegram(telegram)
-        self.__assertInvalidTelegram(telegram)
-
-    def test_emptyValueNameTerminated(self, mocker):
-        self.__setupStubs(mocker)
-
-        telegram = self.__telegramWithField('valueName', [ord('\0')])
-        self.__parseTelegram(telegram)
-        expectedTelegram = {'telegramType': 0x01, 'valueName': '', 'valueType': 0x01, 'value': 0xBB,
-                            'timestamp': 0x04030201}
-        self.__assertValidTelegram(expectedTelegram)
-
-    def test_invalidValueType(self, mocker):
-        self.__setupStubs(mocker)
-
-        telegram = self.__telegramWithField('valueType', 0x33)
-        self.__parseTelegram(telegram)
-        self.__assertInvalidTelegram(telegram)
-
-    def test_valueTypeFloat(self, mocker):
-        self.__setupStubs(mocker)
-
-        telegram = [170, 1, 109, 121, 86, 97, 108, 117, 101, 78, 97, 109, 101, 0,
-                    4, 0x33, 0x33, 0xA3, 0x40, 4, 3, 2, 1, 187]
-        self.__parseTelegram(telegram)
-        expectedFloat = struct.unpack('f', struct.pack('f', 5.1))[0]
-        expectedTelegram = {'telegramType': 0x01, 'valueName': 'myValueName', 'valueType': 0x04, 'value': expectedFloat,
-                            'timestamp': 0x04030201}
-        self.__assertValidTelegram(expectedTelegram)
-
-    def test_tooLongTelegram(self, mocker):
-        self.__setupStubs(mocker)
-
-        tooLongTelegram = self.__ValidTelegram[0:-1] + [0xEE] + [self.__ValidTelegram[-1]]
-        self.__parseTelegram(tooLongTelegram)
-        self.__assertInvalidTelegram(tooLongTelegram)
-
-    def test_validTelegram(self, mocker):
-        self.__setupStubs(mocker)
-
-        self.__parseTelegram(self.__ValidTelegram)
-        expectedTelegram = {'telegramType': 0x01, 'valueName': 'myValueName', 'valueType': 0x01, 'value': 0xBB,
-                            'timestamp': 0x04030201}
-        self.__assertValidTelegram(expectedTelegram)
-
-    def __parseStart(self):
-        self.telegramParser.parse(0xAA)
-
-    def __parseEnd(self):
-        self.telegramParser.parse(0xBB)
-
-    def __parseTelegramType(self, telegramType):
-        self.telegramParser.parse(telegramType)
-
-    def __parseTelegram(self, telegram):
-        localTelegram = telegram.copy()
-        if len(localTelegram) > 0:
-            self.telegramParser.parse(localTelegram.pop(0))
-            self.__parseTelegram(localTelegram)
-
-    def __telegramWithField(self, field, value):
-        telegram = self.__ValidTelegram.copy()
-        if field == 'telegramType':
-            telegram[1] = value
-        elif field == 'valueName':
-            while telegram[2] != ord('\0'):
-                del telegram[2]
-            if len(value) > 0:
-                stringReverse = value[::-1]
-                while stringReverse[0] != ord('\0'):
-                    telegram.insert(2, stringReverse[0])
-                    stringReverse = stringReverse[1:]
-            else:
-                del telegram[2]
-        elif field == 'valueType':
-            telegram[telegram[2:].index(ord('\0')) + 2 + 1] = value
-        return telegram
-
-    def __assertInvalidTelegram(self, parsedData):
-        self.telegramReceived.assert_not_called()
-        self.invalidTelegram.assert_called_once()
-        self.invalidTelegram.assert_called_with(parsedData)
-
-    def __assertValidTelegram(self, expectedTelegram):
-        self.telegramReceived.assert_called_once()
-        self.telegramReceived.assert_called_with(expectedTelegram)
-        self.invalidTelegram.assert_not_called()
+def test_parseStream_stringTelegram():
+	telegramTypeId = 2
+	value = 'thisIsMyStringValue'
+	stream = [0xAA, telegramTypeId] + [ord(c) for c in value] + [0] + [0xBB]
+	telegrams = TelegramParser.parseStream(stream)
+	assert len(telegrams) == 1
+	telegram = telegrams[0]
+	assert telegram['telegramType'] == 'string'
+	assert telegram['value'] == value
+	assert telegram['valid'] == True
