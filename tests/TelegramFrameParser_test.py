@@ -18,48 +18,82 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from helpers.TelegramFrameParser import _TelegramFrameParser
 
-__TelegramStartId = 0xAA
-__TelegramEndId = 0xBB
-__ReplacementMarker = 0xCC
-
 def test_splitEmptyStream():
 	telegrams = _TelegramFrameParser.splitIntoTelegrams([])
 	assert telegrams == []
 
-""" def test_parseEmptyTelegram():
-	telegrams = _TelegramFrameParser.parseFrame([])
-	assert telegrams == []
+def test_splitEmptyTelegram():
+	data = [0xAA, 0xBB]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(data)
+	assert len(telegrams) == 1
+	assert telegrams[0]['raw'] == bytes(data)
 
-def test_parseTelegramWithOnlyStart():
-	resultingTelegram = {'raw': b'\xaa', 'valid': False}
+def test_splitTelegrams():
+	telegram1 = [0xAA, 1, 2, 3, 0xBB]
+	telegram2 = [0xAA, 9, 8, 7, 6, 0xBB]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(telegram1 + telegram2)
+	assert len(telegrams) == 2
+	assert telegrams[0]['raw'] == bytes(telegram1)
+	assert telegrams[1]['raw'] == bytes(telegram2)
 
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramStartId])
-	assert telegrams == [resultingTelegram]
+def test_splitStreamWithNoStart():
+	invalidStart = [1, 2, 3, 0xBB]
+	telegram = [0xAA, 9, 8, 7, 6, 0xBB]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(invalidStart + telegram)
+	assert len(telegrams) == 2
+	assert telegrams[0]['raw'] == bytes(invalidStart)
+	assert telegrams[1]['raw'] == bytes(telegram)
 
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramStartId, __TelegramStartId])
-	assert telegrams == [resultingTelegram, resultingTelegram]
+def test_splitTelegramWithNoStart():
+	telegram1 = [0xAA, 9, 8, 7, 6, 0xBB]
+	invalidStart = [1, 2, 3, 0xBB]
+	telegram2 = [0xAA, 22, 0xBB]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(telegram1 + invalidStart + telegram2)
+	assert len(telegrams) == 3
+	assert telegrams[0]['raw'] == bytes(telegram1)
+	assert telegrams[1]['raw'] == bytes(invalidStart)
+	assert telegrams[2]['raw'] == bytes(telegram2)
 
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramStartId, __TelegramStartId, __TelegramStartId])
-	assert telegrams == [resultingTelegram, resultingTelegram, resultingTelegram]
+def test_splitStreamWithNoEnd():
+	telegram = [0xAA, 9, 8, 7, 6, 0xBB]
+	invalidEnd = [0xAA, 1, 2, 3]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(telegram + invalidEnd)
+	assert len(telegrams) == 2
+	assert telegrams[0]['raw'] == bytes(telegram)
+	assert telegrams[1]['raw'] == bytes(invalidEnd)
 
-def test_parseTelegramWithOnlyEnd():
-	resultingTelegram = {'raw': b'\xbb', 'valid': False}
+def test_splitTelegramWithNoEnd():
+	telegram1 = [0xAA, 9, 8, 7, 6, 0xBB]
+	invalidEnd = [0xAA, 1, 2, 3]
+	telegram2 = [0xAA, 22, 0xBB]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(telegram1 + invalidEnd + telegram2)
+	assert len(telegrams) == 3
+	assert telegrams[0]['raw'] == bytes(telegram1)
+	assert telegrams[1]['raw'] == bytes(invalidEnd)
+	assert telegrams[2]['raw'] == bytes(telegram2)
 
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramEndId])
-	assert telegrams == [resultingTelegram]
+def test_splitTelegramWithNoEndAndEmpty():
+	telegram1 = [0xAA, 9, 8, 7, 6, 0xBB]
+	onlyStart = [0xAA]
+	telegram2 = [0xAA, 22, 0xBB]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(telegram1 + onlyStart + telegram2)
+	assert len(telegrams) == 3
+	assert telegrams[0]['raw'] == bytes(telegram1)
+	assert telegrams[1]['raw'] == bytes(onlyStart)
+	assert telegrams[2]['raw'] == bytes(telegram2)
 
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramEndId, __TelegramEndId])
-	assert telegrams == [resultingTelegram, resultingTelegram]
+def test_splitStreamWithInvalidStart():
+	invalidStart = [0x12, 0x34, 0x56]
+	telegram = [0xAA, 22, 0xBB]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(invalidStart + telegram)
+	assert len(telegrams) == 2
+	assert telegrams[0]['raw'] == bytes(invalidStart)
+	assert telegrams[1]['raw'] == bytes(telegram)
 
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramEndId, __TelegramEndId, __TelegramEndId])
-	assert telegrams == [resultingTelegram, resultingTelegram, resultingTelegram]
-
-def test_parseTelegramWithOnlyStartAndEnd():
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramStartId, __TelegramEndId])
-	assert telegrams == [{'raw': b'\xaa\xbb', 'valid': False}]
-
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramStartId, __TelegramEndId, __TelegramStartId])
-	assert telegrams == [{'raw': b'\xaa\xbb', 'valid': False}, {'raw': b'\xaa', 'valid': False}]
-
-	telegrams = _TelegramFrameParser.parseFrame([__TelegramStartId, __TelegramEndId, __TelegramEndId])
-	assert telegrams == [{'raw': b'\xaa\xbb', 'valid': False}, {'raw': b'\xbb', 'valid': False}] """
+def test_splitStreamWithInvalidEnd():
+	telegram = [0xAA, 22, 0xBB]
+	invalidEnd = [0x78, 0x9A, 0xBC, 0xCC]
+	telegrams = _TelegramFrameParser.splitIntoTelegrams(invalidEnd + telegram)
+	assert len(telegrams) == 2
+	assert telegrams[1]['raw'] == bytes(telegram)
+	assert telegrams[0]['raw'] == bytes(invalidEnd)
