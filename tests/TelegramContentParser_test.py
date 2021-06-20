@@ -24,12 +24,10 @@ def test_parseTelegramType_emptyStream():
 	with pytest.raises(TelegramContentParserException, match='stream is empty'):
 		_TelegramContentParser.parseTelegramType(None, [])
 
-
 @pytest.mark.parametrize('telegramType', [(0x00), (0x03)])
 def test_parseTelegramType_invalidType(telegramType):
 	with pytest.raises(TelegramContentParserException, match='invalid telegram type'):
 		_TelegramContentParser.parseTelegramType(None, [telegramType])
-
 
 @pytest.mark.parametrize('telegramType, telegramTypeString',
 			 [(0x01,       'value'),
@@ -41,7 +39,6 @@ def test_parseTelegramType(telegramType, telegramTypeString):
 	newStream = _TelegramContentParser.parseTelegramType(telegram, [telegramType, rest])
 	assert newStream == [rest]
 	assert telegram['telegramType'] == telegramTypeString
-
 
 def test_parseValueName_emptyStream():
 	with pytest.raises(TelegramContentParserException, match='string has no terminator'):
@@ -58,4 +55,23 @@ def test_parseValueName():
 	assert telegram['valueName'] == 'Hello'
 	assert newStream == [11, 22, 33]
 
+def test_parseValueType_emptyStream():
+	with pytest.raises(TelegramContentParserException, match='no value to parse'):
+		_TelegramContentParser.parseValueType(None, [])
 
+@pytest.mark.parametrize('valueType', [(0x00), (0x05)])
+def test_parseValueType_invalidType(valueType):
+	with pytest.raises(TelegramContentParserException, match='invalid value type'):
+		_TelegramContentParser.parseValueType(None, [valueType])
+
+@pytest.mark.parametrize('valueType, valueTypeString',
+			 [(0x01,    'int8'),
+			  (0x02,    'uint8'),
+			  (0x03,    'ulong'),
+			  (0x04,    'float'),
+			 ])
+def test_parseValueType(valueType, valueTypeString):
+	telegram = {}
+	newStream = _TelegramContentParser.parseValueType(telegram, [valueType])
+	assert telegram['valueType'] == valueTypeString
+	assert newStream == []

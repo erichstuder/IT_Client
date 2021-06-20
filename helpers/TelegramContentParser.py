@@ -51,10 +51,10 @@ class _TelegramContentParser:
 			4: 'float',
 		}
 		if len(telegramStream) == 0:
-			raise ValueError('no value to parse')
+			raise TelegramContentParserException('no value to parse')
 		valueType = valueTypes.get(telegramStream[0])
 		if valueType == None:
-			raise ValueError('invalid value type')
+			raise TelegramContentParserException('invalid value type')
 		telegram['valueType'] = valueType
 		return telegramStream[1:]
 
