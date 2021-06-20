@@ -44,7 +44,7 @@ def test_parseTelegramType(telegramType, telegramTypeString):
 
 
 def test_parseValueName_emptyStream():
-	with pytest.raises(TelegramContentParserException, match='value name has no terminator'):
+	with pytest.raises(TelegramContentParserException, match='string has no terminator'):
 		_TelegramContentParser.parseValueName(None, [])
 
 def test_parseValueName_emptyString():

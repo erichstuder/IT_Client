@@ -36,19 +36,11 @@ class _TelegramContentParser:
 		newTelegramStream = telegramStream[1:]
 		return newTelegramStream
 
-	@staticmethod
-	def parseValueName(telegram, telegramStream):
-		name = ''
-		nameLength = 0
-		for byte in telegramStream:
-			if byte == 0:
-				if len(name) < 2:
-					raise TelegramContentParserException('string is empty')
-				telegram['valueName'] = name
-				return telegramStream[nameLength+1:]
-			name += chr(byte)
-			nameLength += 1
-		raise TelegramContentParserException('value name has no terminator')
+	@classmethod
+	def parseValueName(cls, telegram, telegramStream):
+		name, newTelegramStream = cls.__parseString(telegramStream)
+		telegram['valueName'] = name
+		return newTelegramStream
 
 	@staticmethod
 	def parseValueType(telegram, telegramStream):
@@ -93,14 +85,22 @@ class _TelegramContentParser:
 		telegram['timestamp'] = struct.unpack('L', bytes(telegramStream[:size]))[0]
 		return telegramStream[size:]
 
+	@classmethod
+	def parseString(cls, telegram, telegramStream):
+		name, newTelegramStream = cls.__parseString(telegramStream)
+		telegram['value'] = name
+		return newTelegramStream
+
+
 	@staticmethod
-	def parseString(telegram, telegramStream):
-		name = ''
-		nameLength = 0
+	def __parseString(telegramStream):
+		string = ''
+		stringLength = 0
 		for byte in telegramStream:
 			if byte == 0:
-				telegram['value'] = name
-				return telegramStream[nameLength + 1:]
-			name += chr(byte)
-			nameLength += 1
-		raise ValueError('string has no terminator')
+				if len(string) < 2:
+					raise TelegramContentParserException('string is empty')
+				return string, telegramStream[stringLength+1:]
+			string += chr(byte)
+			stringLength += 1
+		raise TelegramContentParserException('string has no terminator')
