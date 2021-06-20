@@ -16,6 +16,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+class TelegramFrameParserException(Exception):
+	pass
+
 class _TelegramFrameParser:
 	__TelegramStartId = 0xAA
 	__TelegramEndId = 0xBB
@@ -34,39 +37,20 @@ class _TelegramFrameParser:
 				startNewTelegram = True
 		return telegrams
 
-	@staticmethod
-	def __parse(telegrams):
-		for telegram in telegrams:
-			try:
-				telegramNoStartAndEnd = _TelegramFrameParser.__parseStartAndEnd(telegram['raw'])
-				telegramNoReplacementMarkers = _TelegramFrameParser.__parseReplacementMarkers(telegramNoStartAndEnd)
-				telegram['valid'] = True
-			except ValueError:
-				telegram['valid'] = False
-
-	@staticmethod
-	def __parseStartAndEnd(telegramStream):
-		if telegramStream[0] != _TelegramFrameParser.__TelegramStartId or telegramStream[-1] != _TelegramFrameParser.__TelegramEndId:
-			raise ValueError('Parsing Start and End failed')
-		return telegramStream[1:-1]
-
-	@staticmethod
-	def __parseReplacementMarkers(telegramStream):
-		telegramStreamWithoutReplacementMarkers = b''
+	@classmethod
+	def extractContent(cls, telegram):
+		if telegram[0] != cls.__TelegramStartId:
+			raise TelegramFrameParserException('Unexpected Start')
+		if telegram[-1] != cls.__TelegramEndId:
+			raise TelegramFrameParserException('Unexpected End')
+		content = b''
 		offset = 0
-		for byte in telegramStream:
-			if byte == _TelegramFrameParser.__ReplacementMarker:
+		for byte in telegram[1:-1]:
+			if byte == cls.__ReplacementMarker:
 				offset += 1
 			else:
-				telegramStreamWithoutReplacementMarkers += bytes([byte + offset])
+				content += bytes([byte + offset])
 				offset = 0
-		return telegramStreamWithoutReplacementMarkers
-
-""" 	
-	@classmethod
-	def parseStream(cls, data: bytes):
-		telegrams = cls.__splitIntoTelegrams(data)
-
-		cls.__parse(telegrams)
-		return telegrams
-"""
+		if offset != 0:
+			raise TelegramFrameParserException('Unresolvable Replacement Marker')
+		return content

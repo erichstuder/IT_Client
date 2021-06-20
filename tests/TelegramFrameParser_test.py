@@ -17,6 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from helpers.TelegramFrameParser import _TelegramFrameParser
+from helpers.TelegramFrameParser import TelegramFrameParserException
+import pytest
 
 def test_splitEmptyStream():
 	telegrams = _TelegramFrameParser.splitIntoTelegrams([])
@@ -97,3 +99,28 @@ def test_splitStreamWithInvalidEnd():
 	assert len(telegrams) == 2
 	assert telegrams[1]['raw'] == bytes(telegram)
 	assert telegrams[0]['raw'] == bytes(invalidEnd)
+
+def test_extractContent():
+	telegram = bytes([0xAA, 0xCC, 0xCB, 0x12, 0xBB])
+	content = _TelegramFrameParser.extractContent(telegram)
+	assert content == bytes([0xCC, 0x12])
+
+def test_extractContentWithNoStart():
+	telegram = bytes([0xCC, 0xCB, 0x12, 0xBB])
+	with pytest.raises(TelegramFrameParserException, match='Unexpected Start'):
+		_TelegramFrameParser.extractContent(telegram)
+
+def test_extractContentWithNoEnd():
+	telegram = bytes([0xAA, 0xCC, 0xCB, 0x12])
+	with pytest.raises(TelegramFrameParserException, match='Unexpected End'):
+		_TelegramFrameParser.extractContent(telegram)
+
+def test_extractContentWithUnresolvableReplacementMarker():
+	telegram = bytes([0xAA, 0xCC, 0xCB, 0x12, 0xCC, 0xBB])
+	with pytest.raises(TelegramFrameParserException, match='Unresolvable Replacement Marker'):
+		_TelegramFrameParser.extractContent(telegram)
+
+def test_extractContentWithManyReplacementMarkers():
+	telegram = bytes([0xAA, 0xCC, 0xCC, 0xCC, 0xCC, 0x00, 0xBB])
+	content = _TelegramFrameParser.extractContent(telegram)
+	assert content == bytes([0x04])
