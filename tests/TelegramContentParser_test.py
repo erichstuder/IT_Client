@@ -105,19 +105,34 @@ def test_parseValue_noStream(valueTypeString):
 			 ])
 def test_parseValue(valueTypeString, data, result):
 	telegram = {'valueType': valueTypeString}
-	newStream = _TelegramContentParser().parseValue(telegram, data)
+	newStream = _TelegramContentParser.parseValue(telegram, data)
 	assert telegram['value'] == result
 
 def test_parseTimestamp_noStream():
 	with pytest.raises(TelegramContentParserException, match='not enough bytes to parse ulong'):
-		_TelegramContentParser().parseTimestamp({}, [])
+		_TelegramContentParser.parseTimestamp({}, [])
 
 def test_parseTimestamp_noTelegram():
 	with pytest.raises(TelegramContentParserException, match='telegram is None'):
-		_TelegramContentParser().parseTimestamp(None, [5, 6, 7, 8])
+		_TelegramContentParser.parseTimestamp(None, [5, 6, 7, 8])
 
 def test_parseTimestamp_noTelegram():
 	telegram = {}
-	newStream = _TelegramContentParser().parseTimestamp(telegram, [5, 6, 7, 8])
+	newStream = _TelegramContentParser.parseTimestamp(telegram, [5, 6, 7, 8])
 	assert telegram['timestamp'] == 0x08070605
+	assert newStream == []
+
+def test_parseString_noTelegram():
+	with pytest.raises(TelegramContentParserException, match='telegram is None'):
+		_TelegramContentParser.parseString(None, [])
+
+def test_parseString_noStream():
+	with pytest.raises(TelegramContentParserException, match='string has no terminator'):
+		_TelegramContentParser.parseString({}, [])
+
+def test_parseString():
+	string = 'dummy'
+	telegram = {}
+	newStream = _TelegramContentParser.parseString(telegram, [ord(c) for c in string] + [0] )
+	assert telegram['value'] == string
 	assert newStream == []

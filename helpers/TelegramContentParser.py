@@ -106,6 +106,8 @@ class _TelegramContentParser:
 
 	@classmethod
 	def parseString(cls, telegram, telegramStream):
+		if telegram is None:
+			raise TelegramContentParserException('telegram is None')
 		name, newTelegramStream = cls.__parseString(telegramStream)
 		telegram['value'] = name
 		return newTelegramStream
