@@ -91,6 +91,8 @@ class _TelegramContentParser:
 
 	@classmethod
 	def parseTimestamp(cls, telegram, telegramStream):
+		if telegram is None:
+			raise TelegramContentParserException('telegram is None')
 		telegram['timestamp'], size = cls.__parseULong(telegramStream)
 		return telegramStream[size:]
 
@@ -107,7 +109,6 @@ class _TelegramContentParser:
 		name, newTelegramStream = cls.__parseString(telegramStream)
 		telegram['value'] = name
 		return newTelegramStream
-
 
 	@staticmethod
 	def __parseString(telegramStream):
