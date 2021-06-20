@@ -16,10 +16,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import struct
-from collections import namedtuple
-
-
 class _TelegramFrameParser:
 	__TelegramStartId = 0xAA
 	__TelegramEndId = 0xBB
@@ -28,24 +24,15 @@ class _TelegramFrameParser:
 	@classmethod
 	def splitIntoTelegrams(cls, stream: bytes):
 		telegrams = []
-		if len(stream) == 0:
-			return telegrams
-		
-		cls.__startNewTelegram(telegrams)
-		byteOld = 0
+		startNewTelegram = True
 		for byte in stream:
-			if byteOld == cls.__TelegramEndId or byte == cls.__TelegramStartId:
-				cls.__startNewTelegram(telegrams)
+			if startNewTelegram or byte == cls.__TelegramStartId:
+				startNewTelegram = False
+				telegrams.append({'raw': b''})
 			telegrams[-1]['raw'] += bytes([byte])
-			byteOld = byte
+			if byte == cls.__TelegramEndId:
+				startNewTelegram = True
 		return telegrams
-
-	@staticmethod
-	def __startNewTelegram(telegrams):
-		if len(telegrams) == 0:
-			telegrams.append({'raw': b''})
-		elif telegrams[-1]['raw'] != b'':
-			telegrams.append({'raw': b''})
 
 	@staticmethod
 	def __parse(telegrams):
@@ -53,9 +40,9 @@ class _TelegramFrameParser:
 			try:
 				telegramNoStartAndEnd = _TelegramFrameParser.__parseStartAndEnd(telegram['raw'])
 				telegramNoReplacementMarkers = _TelegramFrameParser.__parseReplacementMarkers(telegramNoStartAndEnd)
-				telegram["valid"] = True
+				telegram['valid'] = True
 			except ValueError:
-				telegram["valid"] = False
+				telegram['valid'] = False
 
 	@staticmethod
 	def __parseStartAndEnd(telegramStream):
