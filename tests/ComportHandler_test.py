@@ -27,6 +27,11 @@ def serialMocking(mocker):
 	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'setPort')
 	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'open')
 
+@pytest.fixture
+def writeMocking(mocker):
+	mocker.patch.object(helpers.ComportHandler.ComportHandler, 'open')
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'write')
+
 
 def test_init():
 	h = ComportHandler()
@@ -87,4 +92,37 @@ def test_open_portWontOpen(serialMocking, mocker):
 	with pytest.raises(ComportHandlerException, match="^comport open timeout$"):
 		h.open()
 
-	assert 2.9 <= time.time()-startTime < 3.5
+	assert 2.9 <= time.time()-startTime <= 3.5
+
+
+def test_write_portClosed(serialMocking, writeMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=False)
+
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	h.write('')
+
+	helpers.ComportHandler.serial.Serial.isOpen.assert_called_once()
+	helpers.ComportHandler.ComportHandler.open.assert_called_once()
+
+
+def test_write_portClosed(serialMocking, writeMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
+
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	h.write('')
+
+	helpers.ComportHandler.serial.Serial.isOpen.assert_called_once()
+	helpers.ComportHandler.ComportHandler.open.assert_not_called()
+
+
+def test_write(serialMocking, writeMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
+
+	data = 'Hello'
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	h.write(data)
+
+	helpers.ComportHandler.serial.Serial.write.assert_called_once_with(data.encode())
