@@ -60,7 +60,7 @@ def test_findPortByVidAndPid_tooManyDevices(mocker):
 		_ComportAccess.findPortByVidAndPid(vid=None, pid=pid)
 
 
-def test_findPortByVidAndPid_tooManyDevices(mocker):
+def test_findPortByVidAndPid(mocker):
 	pid = 632545
 	port = 'COM5632'
 	mocker.patch.object(helpers.ComportAccess.pyudev.Context, 'list_devices', return_value=[Device(pid=pid, port=port)])
