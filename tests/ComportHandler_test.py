@@ -16,40 +16,75 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-# testlist
-# - test constructor
+import pytest
+import time
+import helpers.ComportHandler
+from helpers.ComportHandler import ComportHandler
+from helpers.ComportHandler import ComportHandlerException
 
-import helpers.ComportHandler as ComportHandler
-
-
-def test_setPort(mocker):
-    comportHandler = ComportHandler.ComportHandler()
-    comport = "COM666"
-    comportHandler.setPort(comport)
-    assert comportHandler._ComportHandler__serialPort.port == comport
-
-
-def test_setBaudrate(mocker):
-    comportHandler = ComportHandler.ComportHandler()
-    baudrate = 9874
-    comportHandler.setBaudrate(baudrate)
-    assert comportHandler._ComportHandler__serialPort.baudrate == baudrate
+@pytest.fixture
+def serialMocking(mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'setPort')
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'open')
 
 
-# TODO: more tests
-"""def test_write(mocker):
-    serial_mock = mocker.patch("app.ComportHandler.serial.Serial")
+def test_init():
+	h = ComportHandler()
+	assert h.connectionType == None
+	assert h.vid == None
+	assert h.pid == None
+	assert h.port == None
 
-    mockManager = mocker.Mock()
-    mockManager.attach_mock(serial_mock, "serial_mock")
 
-    comportHandler = ComportHandler.ComportHandler()
-    baudrate = 9874
-    comportHandler.write()
+def test_open_USB_RS232(serialMocking, mocker):
+	port = 'COM1'
+	mocker.patch.object(helpers.ComportHandler._ComportAccess, 'findPortByVidAndPid', return_value=port)
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
 
-    expectedCallOrder = [
-        mocker.call.serial_mock(None),
-    ]
-    assert mockManager.mock_calls == expectedCallOrder
+	vid = 3245
+	pid = 963
+	h = ComportHandler()
+	h.connectionType = "USB_RS232"
+	h.pid = pid
+	h.vid = vid
+	h.open()
 
-    assert comportHandler._ComportHandler__serialPort.baudrate == baudrate"""
+	helpers.ComportHandler._ComportAccess.findPortByVidAndPid.assert_called_once_with(vid=vid, pid=pid)
+	helpers.ComportHandler.serial.Serial.setPort.assert_called_once_with(port)
+	helpers.ComportHandler.serial.Serial.open.assert_called_once()
+	helpers.ComportHandler.serial.Serial.isOpen.assert_called_once()
+	
+
+def test_open_RS232(serialMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
+
+	port = "myPort"
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	h.port = port
+	h.open()
+
+	helpers.ComportHandler.serial.Serial.setPort.assert_called_once_with(port)
+	helpers.ComportHandler.serial.Serial.open.assert_called_once()
+	helpers.ComportHandler.serial.Serial.isOpen.assert_called_once()
+
+
+def test_open_unsupportedConnectionType():
+	h = ComportHandler()
+	myConnectionType = "myConnectionType"
+	h.connectionType = myConnectionType
+	with pytest.raises(ComportHandlerException, match="^unsupported connectionType: " + myConnectionType + "$"):
+		h.open()
+
+
+def test_open_portWontOpen(serialMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=False)
+
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	h.port = "myPort"
+	startTime = time.time()
+	with pytest.raises(ComportHandlerException, match="^comport open timeout$"):
+		h.open()
+
+	assert 2.9 <= time.time()-startTime < 3.5

@@ -20,184 +20,51 @@ import serial  # install pyserial to gain access
 import sys
 #import winreg
 import logging
-import pyudev
+import time
+from helpers.ComportAccess import _ComportAccess
 
+class ComportHandlerException(Exception):
+	pass
 
 class ComportHandler:
-	def __init__(self, infoCallback):
+	def __init__(self):
 		self.__serialPort = serial.Serial(None)
 		self.__serialPort.timeout = 0
-		self.__infoCallback = infoCallback
+		self.connectionType = None
+		self.vid = None
+		self.pid = None
+		self.port = None
 
 
-	def setConnectionType(self, connectionType):
-		self.__connectionType = connectionType
-
-
-	def setVID(self, vid):
-		self.__vid = vid
-
-
-	def setPID(self, pid):
-		self.__pid = pid
-
-	
-	#def setDeviceId(self, deviceId):
-	#	self.__deviceId = deviceId
-
-
-	def setPort(self, port):
-		self.__port = port
-
-
-	def setBaudrate(self, baudrate):
-		self.__baudrate = baudrate
-
-
-	def __open(self):
-		if self.__serialPort.is_open:
-			return
-		
-		if self.__connectionType == None:
-			self.__infoCallback("Error: connectionType has not been set")
-		elif self.__connectionType == "USB_RS232":
-			udev = pyudev.Context()
-			devices = []
-			for d in  udev.list_devices(subsystem="tty", ID_VENDOR_ID=self.__vid):
-				if d.get("ID_MODEL_ID") == self.__pid:
-					devices += [d]
-			if len(devices) == 0:
-				self.__infoCallback("Error: no device found")
-				return
-			if len(devices) > 1:
-				self.__infoCallback("Error: more than one device found")
-				return
-			self.__serialPort.port = devices[0].device_node
-			
-			self.__serialPort.open()
-			while not self.__serialPort.is_open:
-				pass
-		elif self.__connectionType == "RS232":
-			if self.__port == None:
-				return
-			self.__serialPort.port = port
-				
-			self.__serialPort.open()
-			while not self.__serialPort.is_open:
-				pass
+	def open(self):
+		if self.connectionType == "USB_RS232":
+			self.__serialPort.setPort(_ComportAccess.findPortByVidAndPid(vid=self.vid, pid=self.pid))
+		elif self.connectionType == "RS232":
+			self.__serialPort.setPort(self.port)
 		else:
-			self.__infoCallback("Error: unsupported connectionType: " + self.__connectionType)
+			raise ComportHandlerException("unsupported connectionType: " + self.connectionType)
+	
+		self.__serialPort.open()
+		timeout = time.time() + 3
+		while True:
+			if self.__serialPort.isOpen():
+				break
+			if time.time() > timeout:
+				raise ComportHandlerException("comport open timeout")
 
 
 	def write(self, data):
-		try:
-			self.__open()
-			self.__serialPort.write(data.encode())
-			self.__infoCallback("Data written: \"" + self.__replaceEscapes(data) + "\"")
-		except serial.serialutil.SerialException as e:
-			self.__infoCallback("Error: Could not write \"" + self.__replaceEscapes(data) + "\"")
-		except Exception as e:
-			self.__infoCallback("Unexpected exception while writing to comport: " + str(e))
+		if not self.__serialPort.isOpen():
+			self.open()
+		self.__serialPort.write(data.encode())
 
 
 	def read(self):
-		try:
-			if not self.__serialPort.is_open:
-				return
-			
-			value = self.__serialPort.read(self.__serialPort.inWaiting())
-			if value != b"":
-				return value
-			else:
-				return None
-		except serial.serialutil.SerialException as e:
-			pass  # connection failed: most probably a problem with the other device or just not connected
-		except Exception as e:
-			self.__infoCallback("Unexpected exception while reading from comport: " + str(e))
-
-
-	def __replaceEscapes(self, text):
-		text = text.replace("\n", "\\n")
-		text = text.replace("\r", "\\r")
-		return text
-
-""" 
-	friendly names is a feature that may be activated in future
-	def getFriendlyNames(self):
-		if sys.platform.startswith("win"):
-			keyHandle = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DEVICEMAP\SERIALCOMM", 0, winreg.KEY_READ)
-			comPorts = []
-			i = 0
-			try:
-				while True:
-					comPorts.append(winreg.EnumValue(keyHandle, i)[1])
-					i += 1
-			except OSError as e:
-				if str(e) != r"[WinError 259] Es sind keine Daten mehr verfügbar":
-					print("unexpected exception")
-			except Exception as e:
-				logging.exception(e)
-				print("unexpected exception")
-			winreg.CloseKey(keyHandle)
-
-			deviceParametersKeys = self.__getDeviceParametersKeys(r"SYSTEM\CurrentControlSet\Enum")
-
-			comPortKeys = [None] * len(comPorts)
-			for key in deviceParametersKeys:
-				try:
-					keyHandle = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key + "\\Device Parameters", 0,
-											   winreg.KEY_READ)
-					portName = winreg.QueryValueEx(keyHandle, "PortName")[0]
-					for i in range(len(comPorts)):
-						if portName == comPorts[i]:
-							comPortKeys[i] = key
-					winreg.CloseKey(keyHandle)
-				except OSError as e:
-					if str(e) == r"[WinError 259] Es sind keine Daten mehr verfügbar":
-						pass
-					elif str(e) == r"[WinError 2] Das System kann die angegebene Datei nicht finden":
-						pass
-					else:
-						print("unexpected exception")
-				except Exception as e:
-					logging.exception(e)
-					print("unexpected exception")
-
-			comPortFriendlyNames = []
-			for key in comPortKeys:
-				keyHandle = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key, 0, winreg.KEY_READ)
-				comPortFriendlyNames.append(winreg.QueryValueEx(keyHandle, "FriendlyName")[0])
-				winreg.CloseKey(keyHandle)
-
-			print("COM ports with friendly name:")
-			i = 0
-			for i in range(len(comPorts)):
-				print("{:<6}".format(comPorts[i]) + ": " + comPortFriendlyNames[i])
+		if not self.__serialPort.isOpen():
+			self.open()
+		value = self.__serialPort.read(self.__serialPort.inWaiting())
+		if value == b"":
+			return None
 		else:
-			raise EnvironmentError("Unsupported platform")
+			return value
 
-	def __getDeviceParametersKeys(self, _key):
-		_keyHandle = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, _key, 0, winreg.KEY_READ)
-		_deviceParametersKeys = []
-		n = 0
-		try:
-			while True:
-				subKey = winreg.EnumKey(_keyHandle, n)
-				if subKey == r"Device Parameters":
-					_deviceParametersKeys.append(_key)
-				else:
-					_deviceParametersKeys += self.__getDeviceParametersKeys(_key + "\\" + subKey)
-				n += 1
-		except OSError as ex:
-			if str(ex) == r"[WinError 259] Es sind keine Daten mehr verfügbar":
-				pass
-			elif str(ex) == r"[WinError 5] Zugriff verweigert":
-				pass
-			else:
-				print("unexpected exception")
-		except Exception as ex:
-			logging.exception(ex)
-			print("unexpected exception")
-		winreg.CloseKey(_keyHandle)
-		return _deviceParametersKeys
-"""
