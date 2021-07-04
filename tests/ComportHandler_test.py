@@ -27,10 +27,18 @@ def serialMocking(mocker):
 	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'setPort')
 	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'open')
 
+
 @pytest.fixture
 def writeMocking(mocker):
 	mocker.patch.object(helpers.ComportHandler.ComportHandler, 'open')
 	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'write')
+
+
+@pytest.fixture
+def readMocking(mocker):
+	mocker.patch.object(helpers.ComportHandler.ComportHandler, 'open')
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'read', return_value='Hello')
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'inWaiting', return_value='inWaitingCalled')
 
 
 def test_init():
@@ -106,7 +114,7 @@ def test_write_portClosed(serialMocking, writeMocking, mocker):
 	helpers.ComportHandler.ComportHandler.open.assert_called_once()
 
 
-def test_write_portClosed(serialMocking, writeMocking, mocker):
+def test_write_portOpen(serialMocking, writeMocking, mocker):
 	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
 
 	h = ComportHandler()
@@ -126,3 +134,46 @@ def test_write(serialMocking, writeMocking, mocker):
 	h.write(data)
 
 	helpers.ComportHandler.serial.Serial.write.assert_called_once_with(data.encode())
+
+
+def test_read_portClosed(serialMocking, readMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=False)
+
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	h.read()
+
+	helpers.ComportHandler.serial.Serial.isOpen.assert_called_once()
+	helpers.ComportHandler.ComportHandler.open.assert_called_once()
+
+
+def test_read_portOpen(serialMocking, readMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
+
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	h.read()
+
+	helpers.ComportHandler.serial.Serial.isOpen.assert_called_once()
+	helpers.ComportHandler.ComportHandler.open.assert_not_called()
+
+
+def test_read_empty(serialMocking, readMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'read', return_value=b'')
+
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	assert h.read() == None
+
+
+def test_read(serialMocking, readMocking, mocker):
+	mocker.patch.object(helpers.ComportHandler.serial.Serial, 'isOpen', return_value=True)
+
+	h = ComportHandler()
+	h.connectionType = "RS232"
+	assert h.read() == 'Hello'
+
+	helpers.ComportHandler.serial.Serial.read.assert_called_once_with('inWaitingCalled')
+	helpers.ComportHandler.serial.Serial.inWaiting.assert_called_once()
+	
