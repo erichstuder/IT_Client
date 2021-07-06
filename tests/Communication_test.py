@@ -44,7 +44,7 @@ def setup_module():
     # os.system('make')
     # it = CDLL(os.path.dirname(__file__) + r'\it.so')
     # it = CDLL(r'C:\Users\erich\Documents\myRepos\IT\source\deviceWithServer\itLibrary\x64\Release\itLibrary.dll')
-    it = cdll.LoadLibrary(r'C:\Users\erich\Documents\myRepos\IT\source\deviceWithServer\itLibrary\x64\Release\itLibrary.dll')
+    #it = cdll.LoadLibrary(r'C:\Users\erich\Documents\myRepos\IT\source\deviceWithServer\itLibrary\x64\Release\itLibrary.dll')
     # it = cdll.LoadLibrary("C:\\Users\\erich\\Documents\\myRepos\\IT\\source\\deviceWithServer\\itLibrary\\x64\\Release\\itLibrary.dll")
 
     # cdll.LoadLibrary(r'C:\Users\erich\Documents\myRepos\IT\source\deviceWithServer\itLibrary\Release\itLibrary.dll')
