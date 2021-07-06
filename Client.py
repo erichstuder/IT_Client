@@ -56,11 +56,6 @@ class Client:
 					break
 
 	def __keyboardInputParser(self, keyboardInput):
-		""" list comports may be activated in future
-		if keyboardInput == "list comports":
-			self.__comPortHandler.getFriendlyNames()
-		el
-		"""
 		if keyboardInput.startswith("set connectionType "):
 			connectionType = keyboardInput.split(" ")[2]
 			self.__comPortHandler.setConnectionType(connectionType)
@@ -73,18 +68,10 @@ class Client:
 			pid = keyboardInput.split(" ")[2]
 			self.__comPortHandler.setPID(pid)
 			self.__printAnswer("PID set to: " + pid)
-		#elif keyboardInput.startswith("set deviceId "):
-		#	deviceId = keyboardInput.split(" ")[2]
-		#	self.__comPortHandler.setDeviceId(deviceId)
-		#	self.__printAnswer("deviceId set to: " + deviceId)
 		elif keyboardInput.startswith("set comport "):
 			comPort = keyboardInput.split(" ")[2]
 			self.__comPortHandler.setPort(comPort)
 			self.__printAnswer("comport set to: " + comPort)
-		elif keyboardInput.startswith("set baudrate "):
-			baudrate = keyboardInput.split(" ")[2]
-			self.__comPortHandler.setBaudrate(baudrate)
-			self.__printAnswer("baudrate set to: " + baudrate)
 		elif keyboardInput.startswith("run "):
 			scriptFileName = keyboardInput.split(" ")[1]
 
@@ -93,14 +80,13 @@ class Client:
 				return
 
 			with open(scriptFileName, "r") as scriptFile:
-				if scriptFileName.endswith(".py"):
-					t = threading.Thread(target=lambda: exec(scriptFile.read(), self.__scriptCommands) )
-					t.daemon = True
-					t.start()
-				else:
-					self.__printAnswer("running: " + scriptFileName)
-					for line in scriptFile:
-						self.__keyboardInputParser(line.strip())
+				if not scriptFileName.endswith(".py"):
+					self.__printAnswer("unsuported file extension")
+					return
+				t = threading.Thread(target=lambda: exec(scriptFile.read(), self.__scriptCommands) )
+				t.daemon = True
+				t.start()
+					
 								
 		elif keyboardInput == "exit":
 			self.__printAnswer("goodbye...")
@@ -114,7 +100,7 @@ class Client:
 		print(">>  " + answer)
 
 
-if __name__ == "__main__":
+def main():
 	print("client started")
 	if sys.platform.startswith("win"):
 		os.system("mode 70,15")
@@ -133,3 +119,17 @@ if __name__ == "__main__":
 
 	Client().run(initFile=initFile, sessionFile=sessionFile)
 
+
+def init():
+	if __name__ == '__main__':
+		sys.exit(main())
+
+
+init()
+
+
+#kann das hier verwendet werden?
+""" 	def __replaceEscapes(self, text):
+		text = text.replace("\n", "\\n")
+		text = text.replace("\r", "\\r")
+		return text """
