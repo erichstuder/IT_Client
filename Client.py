@@ -16,120 +16,41 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from helpers.ComportHandler import ComportHandler
-import threading
-import time
-import os
+from lib.ComportHandler import ComportHandler
 import sys
-import importlib
 
 
 class Client:
-	def __init__(self):
-		self.__running = True
-		self.__comPortHandler = ComportHandler(self.__printAnswer)
-		
-		self.__keyboardReaderThread = threading.Thread(target=self.__keyboardReaderWorker)
-		self.__keyboardReaderThread.daemon = True
-		self.__keyboardReaderThread.start()
+	@classmethod
+	def start(cls):
+		print("client started")
+		cls.setupWindow()
+		args = cls.parseArguments()
+		ClientParser().run(initFile=args.initFile, sessionFile=args.sessionFile)
 
-		self.__scriptCommands = {
-			"send": self.__keyboardInputParser,
-			"sleep": time.sleep
-		}
+	@classmethod
+	def setupWindow():
+		if sys.platform.startswith("win"):
+			os.system("mode 70,15")
+			os.system("title IT client")
 
-	def __keyboardReaderWorker(self):
-		while self.__running:
-			self.__keyboardInputParser(input().strip())
-
-	def run(self, initFile, sessionFile):
-		if initFile != None:
-			self.__keyboardInputParser("run " + initFile)
-
-		with open(sessionFile, "a+b") as sessionFile:
-			while True:
-				data = self.__comPortHandler.read()
-				if data is not None:
-					sessionFile.write(data)
-					sessionFile.flush()
-				if not self.__running:
-					break
-
-	def __keyboardInputParser(self, keyboardInput):
-		if keyboardInput.startswith("set connectionType "):
-			connectionType = keyboardInput.split(" ")[2]
-			self.__comPortHandler.setConnectionType(connectionType)
-			self.__printAnswer("connectionType set to: " + connectionType)
-		elif keyboardInput.startswith("set VID "):
-			vid = keyboardInput.split(" ")[2]
-			self.__comPortHandler.setVID(vid)
-			self.__printAnswer("VID set to: " + vid)
-		elif keyboardInput.startswith("set PID "):
-			pid = keyboardInput.split(" ")[2]
-			self.__comPortHandler.setPID(pid)
-			self.__printAnswer("PID set to: " + pid)
-		elif keyboardInput.startswith("set comport "):
-			comPort = keyboardInput.split(" ")[2]
-			self.__comPortHandler.setPort(comPort)
-			self.__printAnswer("comport set to: " + comPort)
-		elif keyboardInput.startswith("run "):
-			scriptFileName = keyboardInput.split(" ")[1]
-
-			if not os.path.isfile(scriptFileName):
-				self.__printAnswer("error: file not found")
-				return
-
-			with open(scriptFileName, "r") as scriptFile:
-				if not scriptFileName.endswith(".py"):
-					self.__printAnswer("unsuported file extension")
-					return
-				t = threading.Thread(target=lambda: exec(scriptFile.read(), self.__scriptCommands) )
-				t.daemon = True
-				t.start()
-					
-								
-		elif keyboardInput == "exit":
-			self.__printAnswer("goodbye...")
-			self.__running = False
-			time.sleep(0.5)
-		else:
-			self.__comPortHandler.write(keyboardInput + "\r")
-
-	@staticmethod
-	def __printAnswer(answer):
-		print(">>  " + answer)
-
-
-def main():
-	print("client started")
-	if sys.platform.startswith("win"):
-		os.system("mode 70,15")
-		os.system("title IT client")
-
-	initFile = None
-	sessionFile = "mySession.session"
-
-	for n in range(2, len(sys.argv), 2):
-		argName = str(sys.argv[n-1])
-		argValue = str(sys.argv[n])
-		if argName == "-initFile":
-			initFile = argValue
-		elif argName == "-sessionFile":
-			sessionFile = argValue
-
-	Client().run(initFile=initFile, sessionFile=sessionFile)
+	@classmethod
+	def parseArguments():
+		initFile = None
+		sessionFile = "mySession.session"
+		for n in range(2, len(sys.argv), 2):
+			argName = str(sys.argv[n-1])
+			argValue = str(sys.argv[n])
+			if argName == "-initFile":
+				initFile = argValue
+			elif argName == "-sessionFile":
+				sessionFile = argValue
+		return {'initFile': initFile, 'sessionFile': sessionFile}
 
 
 def init():
 	if __name__ == '__main__':
-		sys.exit(main())
+		sys.exit(Client.start())
 
 
 init()
-
-
-#kann das hier verwendet werden?
-""" 	def __replaceEscapes(self, text):
-		text = text.replace("\n", "\\n")
-		text = text.replace("\r", "\\r")
-		return text """

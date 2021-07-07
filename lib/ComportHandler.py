@@ -21,7 +21,7 @@ import sys
 #import winreg
 import logging
 import time
-from helpers.ComportAccess import _ComportAccess
+from lib.ComportAccess import _ComportAccess
 
 class ComportHandlerException(Exception):
 	pass

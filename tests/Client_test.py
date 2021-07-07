@@ -21,7 +21,7 @@ import Client
 
 def test_init(mocker):
 	value = 42
-	mocker.patch.object(Client, 'main', return_value=value)
+	mocker.patch.object(Client.Client, 'start', return_value=value)
 	mocker.patch.object(Client, '__name__', '__main__')
 	mocker.patch.object(Client.sys, 'exit')
 

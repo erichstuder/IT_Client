@@ -18,9 +18,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
 
-import helpers.ComportAccess
-from helpers.ComportAccess import _ComportAccess
-from helpers.ComportAccess import ComportAccessException
+import lib.ComportAccess
+from lib.ComportAccess import _ComportAccess
+from lib.ComportAccess import ComportAccessException
 
 class Device:
 	def __init__(self, pid=None, port=None):
@@ -35,17 +35,17 @@ class Device:
 
 
 def test_findPortByVidAndPid_listDevices(mocker):
-	mocker.patch.object(helpers.ComportAccess.pyudev.Context, 'list_devices', return_value=[])
+	mocker.patch.object(lib.ComportAccess.pyudev.Context, 'list_devices', return_value=[])
 
 	vid = 42
 	with pytest.raises(ComportAccessException):
 		_ComportAccess.findPortByVidAndPid(vid=vid, pid=None)
 
-	helpers.ComportAccess.pyudev.Context.list_devices.assert_called_once_with(subsystem='tty', ID_VENDOR_ID=vid)
+	lib.ComportAccess.pyudev.Context.list_devices.assert_called_once_with(subsystem='tty', ID_VENDOR_ID=vid)
 
 
 def test_findPortByVidAndPid_noDeviceFound(mocker):
-	mocker.patch.object(helpers.ComportAccess.pyudev.Context, 'list_devices', return_value=[])
+	mocker.patch.object(lib.ComportAccess.pyudev.Context, 'list_devices', return_value=[])
 
 	with pytest.raises(ComportAccessException, match="^no device found$"):
 		_ComportAccess.findPortByVidAndPid(vid=5643, pid=None)
@@ -54,7 +54,7 @@ def test_findPortByVidAndPid_noDeviceFound(mocker):
 def test_findPortByVidAndPid_tooManyDevices(mocker):
 	pid = 632545
 	device = Device(pid=pid)
-	mocker.patch.object(helpers.ComportAccess.pyudev.Context, 'list_devices', return_value=[device, device])
+	mocker.patch.object(lib.ComportAccess.pyudev.Context, 'list_devices', return_value=[device, device])
 
 	with pytest.raises(ComportAccessException, match="^more than one device found$"):
 		_ComportAccess.findPortByVidAndPid(vid=None, pid=pid)
@@ -63,6 +63,6 @@ def test_findPortByVidAndPid_tooManyDevices(mocker):
 def test_findPortByVidAndPid(mocker):
 	pid = 632545
 	port = 'COM5632'
-	mocker.patch.object(helpers.ComportAccess.pyudev.Context, 'list_devices', return_value=[Device(pid=pid, port=port)])
+	mocker.patch.object(lib.ComportAccess.pyudev.Context, 'list_devices', return_value=[Device(pid=pid, port=port)])
 
 	assert _ComportAccess.findPortByVidAndPid(vid=None, pid=pid) == port
