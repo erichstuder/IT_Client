@@ -42,7 +42,7 @@ class ComportHandler:
 		elif self.connectionType == "RS232":
 			self.__serialPort.setPort(self.port)
 		else:
-			raise ComportHandlerException("unsupported connectionType: " + self.connectionType)
+			raise ComportHandlerException("unsupported connectionType: " + str(self.connectionType))
 	
 		self.__serialPort.open()
 		timeout = time.time() + 3

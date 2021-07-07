@@ -90,6 +90,14 @@ def test_open_unsupportedConnectionType():
 		h.open()
 
 
+def test_open_unsupportedConnectionType_None():
+	h = ComportHandler()
+	myConnectionType = None
+	h.connectionType = myConnectionType
+	with pytest.raises(ComportHandlerException, match="^unsupported connectionType: " + "None" + "$"):
+		h.open()
+
+
 def test_open_portWontOpen(serialMocking, mocker):
 	mocker.patch.object(lib.ComportHandler.serial.Serial, 'isOpen', return_value=False)
 
