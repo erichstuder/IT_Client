@@ -15,188 +15,80 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import pytest
 import Client
-#import builtins
+import lib
 
 def test_init(mocker):
 	value = 42
 	mocker.patch.object(Client.Client, 'start', return_value=value)
 	mocker.patch.object(Client, '__name__', '__main__')
-	mocker.patch.object(Client.sys, 'exit')
+	exit_mock = mocker.patch.object(Client.sys, 'exit')
 
 	Client.init()
-	Client.sys.exit.assert_called_once_with(value)
+	exit_mock.assert_called_once_with(value)
 
 
+def test_start_startupMessage(mocker):
+	print_mock = mocker.patch('builtins.print')
+	mocker.patch.object(Client.ClientParser, 'run')
 
-""" def test_constructor(mocker):
-	comportHandler_mock = mocker.patch("Client.ComportHandler")
+	Client.Client.start()
 
-	mockManager = mocker.Mock()
-	mockManager.attach_mock(comportHandler_mock, "comportHandler_mock")
-
-	client = Client.Client()
-
-	expectedCallOrder = [
-		mocker.call.comportHandler_mock(),
-	]
-	assert mockManager.mock_calls == expectedCallOrder
+	print_mock.assert_called_once_with('client started')
 
 
-def test_setComport(mocker):
-	comport = "COM23"
-	input_mock = mocker.patch("builtins.input", side_effect=["set comport " + comport + "\n", "exit\n"])
-	print_mock = mocker.patch("builtins.print")
-	comportHandler_setPort_mock = mocker.patch("Client.ComportHandler.setPort")
+def test_start_setupWindow(mocker):
+	mocker.patch('builtins.print')
+	setupWindow_mock = mocker.patch.object(Client.Client, 'setupWindow')
+	mocker.patch.object(Client.ClientParser, 'run')
 
-	mockManager = mocker.Mock()
-	mockManager.attach_mock(input_mock, "input_mock")
-	mockManager.attach_mock(print_mock, "print_mock")
-	mockManager.attach_mock(comportHandler_setPort_mock, "comportHandler_setPort_mock")
+	Client.Client.start()
 
-	client = Client.Client()
-	client.run()
+	setupWindow_mock.assert_called_once_with()
 
-	expectedCallOrder = [
-		mocker.call.input_mock(),
-		mocker.call.comportHandler_setPort_mock(port=comport),
-		mocker.call.print_mock("  comport set to: " + comport),
-		mocker.call.input_mock(),
-		mocker.call.print_mock("  goodbye..."),
-	]
-	assert mockManager.mock_calls == expectedCallOrder
+	
+def test_start_runClientParser(mocker):
+	mocker.patch('builtins.print')
+	
+	initFile = 'myInitFile'
+	sessionFile = 'mySessionFile'
+	mocker.patch.object(Client.Client, 'parseArguments', return_value={'initFile': initFile, 'sessionFile': sessionFile})
+	run_mock = mocker.patch.object(Client.ClientParser, 'run')
 
+	Client.Client.start()
 
-def test_setBaudrate(mocker):
-	baudrate = "1234"
-	input_mock = mocker.patch("builtins.input", side_effect=["set baudrate " + baudrate + "\n", "exit\n"])
-	print_mock = mocker.patch("builtins.print")
-	comportHandler_setBaudrate_mock = mocker.patch("Client.ComportHandler.setBaudrate")
-
-	mockManager = mocker.Mock()
-	mockManager.attach_mock(input_mock, "input_mock")
-	mockManager.attach_mock(print_mock, "print_mock")
-	mockManager.attach_mock(comportHandler_setBaudrate_mock, "comportHandler_setBaudrate_mock")
-
-	client = Client.Client()
-	client.run()
-
-	expectedCallOrder = [
-		mocker.call.input_mock(),
-		mocker.call.comportHandler_setBaudrate_mock(baudrate=baudrate),
-		mocker.call.print_mock("  baudrate set to: " + baudrate),
-		mocker.call.input_mock(),
-		mocker.call.print_mock("  goodbye..."),
-	]
-	assert mockManager.mock_calls == expectedCallOrder
+	run_mock.assert_called_once_with(initFile=initFile, sessionFile=sessionFile)
 
 
-def test_runNonexistentFile(mocker):
-	input_mock = mocker.patch("builtins.input", side_effect=["run myTextNonExistent.txt\n", "exit\n"])
-	print_mock = mocker.patch("builtins.print")
+def test_setupWindow_win(mocker):
+	system_mock = mocker.patch.object(Client.sys, 'platform', 'win')
+	system_mock = mocker.patch.object(Client.os, 'system')
 
-	mockManager = mocker.Mock()
-	mockManager.attach_mock(input_mock, "input_mock")
-	mockManager.attach_mock(print_mock, "print_mock")
+	Client.Client.setupWindow()
 
-	client = Client.Client()
-	client.run()
-
-	expectedCallOrder = [
-		mocker.call.input_mock(),
-		mocker.call.print_mock("  error: file not found"),
-		mocker.call.input_mock(),
-		mocker.call.print_mock("  goodbye..."),
-	]
-	assert mockManager.mock_calls == expectedCallOrder
+	system_mock.assert_any_call("mode 70,15")
+	system_mock.assert_any_call("title IT client")
+	assert system_mock.call_count == 2
 
 
-def test_runFile(mocker, tmpdir):
-	textFile = "myText.txt"
-	with open(textFile, "w") as file:
-		file.write("exit\n")
+def test_setupWindow_notWin(mocker):
+	mocker.patch.object(Client.sys, 'platform', 'myOs')
+	system_mock = mocker.patch.object(Client.os, 'system')
 
-	input_mock = mocker.patch("builtins.input", side_effect=["run " + textFile + "\n"])
-	print_mock = mocker.patch("builtins.print")
+	Client.Client.setupWindow()
 
-	mockManager = mocker.Mock()
-	mockManager.attach_mock(input_mock, "input_mock")
-	mockManager.attach_mock(print_mock, "print_mock")
-
-	client = Client.Client()
-	client.run()
-
-	expectedCallOrder = [
-		mocker.call.input_mock(),
-		mocker.call.print_mock("  running: myText.txt"),
-		mocker.call.print_mock("  goodbye..."),
-	]
-	assert mockManager.mock_calls == expectedCallOrder
+	system_mock.assert_not_called()
 
 
-def test_exit(mocker):
-	input_mock = mocker.patch("builtins.input", side_effect=["exit\n"])
-	print_mock = mocker.patch("builtins.print")
+@pytest.mark.parametrize('arguments, expectation',
+			 [([], {'initFile': None, 'sessionFile': 'mySession.session'}),
+			  (['', '-initFile', 'myInitFile'], {'initFile': 'myInitFile', 'sessionFile': 'mySession.session'}),
+			  (['', '-sessionFile', 'mySessionFile'], {'initFile': None, 'sessionFile': 'mySessionFile'}),
+			  (['', '-initFile', 'myInitFile', '-sessionFile', 'mySessionFile'], {'initFile': 'myInitFile', 'sessionFile': 'mySessionFile'}),
+			  (['', '-sessionFile', 'mySessionFile', '-initFile', 'myInitFile'], {'initFile': 'myInitFile', 'sessionFile': 'mySessionFile'}),
+			 ])
+def test_parseArguments(mocker, arguments, expectation):
+	mocker.patch.object(Client.sys, 'argv', arguments)
 
-	mockManager = mocker.Mock()
-	mockManager.attach_mock(input_mock, "input_mock")
-	mockManager.attach_mock(print_mock, "print_mock")
-
-	client = Client.Client()
-	client.run()
-
-	expectedCallOrder = [
-		mocker.call.input_mock(),
-		mocker.call.print_mock("  goodbye..."),
-	]
-	assert mockManager.mock_calls == expectedCallOrder
-
-
-def test_sendToServer(mocker):
-	cmdToServer = "blabla"
-	input_mock = mocker.patch("builtins.input", side_effect=[cmdToServer + "\n", "exit\n"])
-	print_mock = mocker.patch("builtins.print")
-	comportHandler_write_mock = mocker.patch("Client.ComportHandler.write")
-
-	mockManager = mocker.Mock()
-	mockManager.attach_mock(input_mock, "input_mock")
-	mockManager.attach_mock(print_mock, "print_mock")
-	mockManager.attach_mock(comportHandler_write_mock, "comportHandler_write_mock")
-
-	client = Client.Client()
-	client.run()
-
-	expectedCallOrder = [
-		mocker.call.input_mock(),
-		mocker.call.comportHandler_write_mock(cmdToServer + "\r"),
-		mocker.call.print_mock("  sent to server: " + cmdToServer),
-		mocker.call.input_mock(),
-		mocker.call.print_mock("  goodbye..."),
-	]
-	assert mockManager.mock_calls == expectedCallOrder
-
-
-def test_nothingToReadFromServer(mocker):
-	mocker.patch("builtins.input", return_value="exit\n")
-	mocker.patch("Client.ComportHandler.read", return_value=None)
-	mocker.patch("builtins.open")
-
-	client = Client.Client()
-	client.run()
-
-	Client.ComportHandler.read.assert_called_with()
-	builtins.open.assert_not_called()
-
-
-def test_readFromServer(mocker):
-	mocker.patch("builtins.input", return_value="exit\n")
-	mocker.patch("Client.ComportHandler.read", side_effect=[42, None])
-	mocker.patch("builtins.open")
-
-	client = Client.Client()
-	client.run()
-
-	Client.ComportHandler.read.assert_called_with()
-	builtins.open.assert_called_with("mySession.session", "a+b")
- """
+	assert Client.Client.parseArguments() == expectation

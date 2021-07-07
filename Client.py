@@ -16,9 +16,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from lib.ComportHandler import ComportHandler
+from lib.ClientParser import ClientParser
 import sys
-
+import os
 
 class Client:
 	@classmethod
@@ -26,15 +26,15 @@ class Client:
 		print("client started")
 		cls.setupWindow()
 		args = cls.parseArguments()
-		ClientParser().run(initFile=args.initFile, sessionFile=args.sessionFile)
+		ClientParser().run(initFile=args['initFile'], sessionFile=args['sessionFile'])
 
-	@classmethod
+	@staticmethod
 	def setupWindow():
-		if sys.platform.startswith("win"):
-			os.system("mode 70,15")
-			os.system("title IT client")
+		if sys.platform.startswith('win'):
+			os.system('mode 70,15')
+			os.system('title IT client')
 
-	@classmethod
+	@staticmethod
 	def parseArguments():
 		initFile = None
 		sessionFile = "mySession.session"
@@ -51,6 +51,5 @@ class Client:
 def init():
 	if __name__ == '__main__':
 		sys.exit(Client.start())
-
 
 init()
