@@ -40,7 +40,7 @@ def test_start_startupMessage(mocker):
 
 def test_start_setupWindow(mocker):
 	mocker.patch('builtins.print')
-	setupWindow_mock = mocker.patch.object(Client.Client, 'setupWindow')
+	setupWindow_mock = mocker.patch.object(Client.Client, '_setupWindow')
 	mocker.patch.object(Client.ClientParser, 'run')
 
 	Client.Client.start()
@@ -53,7 +53,7 @@ def test_start_runClientParser(mocker):
 	
 	initFile = 'myInitFile'
 	sessionFile = 'mySessionFile'
-	mocker.patch.object(Client.Client, 'parseArguments', return_value={'initFile': initFile, 'sessionFile': sessionFile})
+	mocker.patch.object(Client.Client, '_parseArguments', return_value={'initFile': initFile, 'sessionFile': sessionFile})
 	run_mock = mocker.patch.object(Client.ClientParser, 'run')
 
 	Client.Client.start()
@@ -65,7 +65,7 @@ def test_setupWindow_win(mocker):
 	system_mock = mocker.patch.object(Client.sys, 'platform', 'win')
 	system_mock = mocker.patch.object(Client.os, 'system')
 
-	Client.Client.setupWindow()
+	Client.Client._setupWindow()
 
 	system_mock.assert_any_call("mode 70,15")
 	system_mock.assert_any_call("title IT client")
@@ -76,7 +76,7 @@ def test_setupWindow_notWin(mocker):
 	mocker.patch.object(Client.sys, 'platform', 'myOs')
 	system_mock = mocker.patch.object(Client.os, 'system')
 
-	Client.Client.setupWindow()
+	Client.Client._setupWindow()
 
 	system_mock.assert_not_called()
 
@@ -91,4 +91,4 @@ def test_setupWindow_notWin(mocker):
 def test_parseArguments(mocker, arguments, expectation):
 	mocker.patch.object(Client.sys, 'argv', arguments)
 
-	assert Client.Client.parseArguments() == expectation
+	assert Client.Client._parseArguments() == expectation

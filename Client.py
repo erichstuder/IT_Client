@@ -24,18 +24,18 @@ class Client:
 	@classmethod
 	def start(cls):
 		print("client started")
-		cls.setupWindow()
-		args = cls.parseArguments()
+		cls._setupWindow()
+		args = cls._parseArguments()
 		ClientParser().run(initFile=args['initFile'], sessionFile=args['sessionFile'])
 
 	@staticmethod
-	def setupWindow():
+	def _setupWindow():
 		if sys.platform.startswith('win'):
 			os.system('mode 70,15')
 			os.system('title IT client')
 
 	@staticmethod
-	def parseArguments():
+	def _parseArguments():
 		initFile = None
 		sessionFile = "mySession.session"
 		for n in range(2, len(sys.argv), 2):
