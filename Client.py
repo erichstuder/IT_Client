@@ -16,7 +16,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from lib.ClientParser import ClientParser
+from lib.CommandParser import CommandParser
+from lib.ComportHandler import ComportHandler
+from lib.KeyboardReader import KeyboardReader
+from lib.ComportLogger import ComportLogger
 import sys
 import os
 
@@ -25,8 +28,18 @@ class Client:
 	def start(cls):
 		print("client started")
 		cls._setupWindow()
+
 		args = cls._parseArguments()
-		ClientParser().run(initFile=args['initFile'], sessionFile=args['sessionFile'])
+		initFile = args['initFile']
+		sessionFile = args['sessionFile']
+		comportHandler = ComportHandler()
+		commandParser = CommandParser(comportHandler)
+		keyboardReader = KeyboardReader(commandParser)
+		keyboardReader.start()
+		if initFile != None:
+			commandParser.parse("run " + initFile)
+		comportLogger = ComportLogger(comportHandler, sessionFile)
+		comportLogger.run()
 
 	@staticmethod
 	def _setupWindow():
@@ -53,3 +66,10 @@ def init():
 		sys.exit(Client.start())
 
 init()
+
+
+#kann das hier verwendet werden?
+""" 	def __replaceEscapes(self, text):
+		text = text.replace("\n", "\\n")
+		text = text.replace("\r", "\\r")
+		return text """
