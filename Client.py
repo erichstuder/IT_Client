@@ -26,20 +26,27 @@ import os
 class Client:
 	@classmethod
 	def start(cls):
-		print("client started")
 		cls._setupWindow()
+		print("client started")
 
 		args = cls._parseArguments()
 		initFile = args['initFile']
 		sessionFile = args['sessionFile']
+
 		comportHandler = ComportHandler()
+
 		commandParser = CommandParser(comportHandler)
 		keyboardReader = KeyboardReader(commandParser)
 		keyboardReader.start()
+
 		if initFile != None:
 			commandParser.parse("run " + initFile)
+
 		comportLogger = ComportLogger(comportHandler, sessionFile)
-		comportLogger.run()
+		comportLogger.start()
+
+		keyboardReader.join()
+		comportLogger.join()
 
 	@staticmethod
 	def _setupWindow():
@@ -59,7 +66,6 @@ class Client:
 			elif argName == "-sessionFile":
 				sessionFile = argValue
 		return {'initFile': initFile, 'sessionFile': sessionFile}
-
 
 def init():
 	if __name__ == '__main__':
