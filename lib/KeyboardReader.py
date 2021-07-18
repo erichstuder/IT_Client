@@ -16,13 +16,13 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import threading
+from threading import Thread
 
-class KeyboardReader:	
+class KeyboardReader(Thread):	
 	def __init__(self, parser):
 		self.__keyboardInputParser = parser
-		self.__keyboardReaderThread = threading.Thread(target=self.__keyboardReader)
-		self.__keyboardReaderThread.daemon = True
+		super().__init__(target=self.__keyboardReader)
+		self.daemon = True
 
 	def __keyboardReader(self):
 		while self.__running:
@@ -30,7 +30,7 @@ class KeyboardReader:
 
 	def start(self):
 		self.__running = True
-		self.__keyboardReaderThread.start()
+		super().start()
 
 	def stop(self):
 		self.__running = False

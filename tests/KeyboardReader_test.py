@@ -20,15 +20,17 @@ import time
 import lib.KeyboardReader as KeyboardReader
 
 def test_keyboardReader_threadCreation(mocker):
-	Thread_mock = mocker.patch.object(KeyboardReader.threading, 'Thread')
+	Thread_mock = mocker.patch.object(KeyboardReader.Thread, '__init__')
+	mocker.patch.object(KeyboardReader.Thread, 'daemon')
 	parser_stub = mocker.stub()
 
-	KeyboardReader.KeyboardReader(parser_stub)
+	keyboardReader = KeyboardReader.KeyboardReader(parser_stub)
 	Thread_mock.assert_called_once_with(target=mocker.ANY)
+	assert keyboardReader.daemon is True
 
 
 def test_keyboardReader_threadStart(mocker):
-	Thread_start_mock = mocker.patch.object(KeyboardReader.threading.Thread, 'start')
+	Thread_start_mock = mocker.patch.object(KeyboardReader.Thread, 'start')
 
 	keyboardReader = KeyboardReader.KeyboardReader(None)
 	Thread_start_mock.assert_not_called()
