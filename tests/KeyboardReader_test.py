@@ -34,9 +34,7 @@ def keyboardReader(mocker):
 def test_keyboardReader_threadCreation(mocker):
 	Thread_mock = mocker.patch.object(KeyboardReader.Thread, '__init__')
 	mocker.patch.object(KeyboardReader.Thread, 'daemon')
-	parser_stub = mocker.stub()
-
-	keyboardReader = KeyboardReader.KeyboardReader(parser_stub)
+	keyboardReader = KeyboardReader.KeyboardReader(None)
 	Thread_mock.assert_called_once_with(target=mocker.ANY)
 
 
