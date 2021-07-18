@@ -16,8 +16,20 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import pytest
 import time
 import lib.KeyboardReader as KeyboardReader
+
+@pytest.fixture()
+def keyboardReader(mocker):
+	mocker.patch('builtins.input')
+	parser_stub = mocker.stub()
+	keyboardReader = KeyboardReader.KeyboardReader(parser_stub)
+	yield keyboardReader
+	keyboardReader.stop()
+	while keyboardReader.is_alive():
+		pass
+
 
 def test_keyboardReader_threadCreation(mocker):
 	Thread_mock = mocker.patch.object(KeyboardReader.Thread, '__init__')
@@ -26,17 +38,17 @@ def test_keyboardReader_threadCreation(mocker):
 
 	keyboardReader = KeyboardReader.KeyboardReader(parser_stub)
 	Thread_mock.assert_called_once_with(target=mocker.ANY)
+
+
+def test_keyboardReader_daemon(keyboardReader):
 	assert keyboardReader.daemon is True
 
 
-def test_keyboardReader_threadStart(mocker):
-	Thread_start_mock = mocker.patch.object(KeyboardReader.Thread, 'start')
-
-	keyboardReader = KeyboardReader.KeyboardReader(None)
-	Thread_start_mock.assert_not_called()
+def test_keyboarReader_start(keyboardReader, mocker):
+	assert keyboardReader.is_alive() is False
 	keyboardReader.start()
-	Thread_start_mock.assert_called_once_with()
-
+	assert keyboardReader.is_alive() is True
+	
 
 def test_keyboardReader(mocker):
 	inputValue = 'a'
@@ -45,7 +57,9 @@ def test_keyboardReader(mocker):
 
 	keyboardReader = KeyboardReader.KeyboardReader(parser_stub)
 	keyboardReader.start()
-	time.sleep(0.1)
-	keyboardReader.stop()
 
 	parser_stub.assert_called_with(inputValue)
+
+	keyboardReader.stop()
+	while keyboardReader.is_alive():
+		pass

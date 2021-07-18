@@ -17,20 +17,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from threading import Thread
+from threading import Event
 
 class KeyboardReader(Thread):	
 	def __init__(self, parser):
 		self.__keyboardInputParser = parser
 		super().__init__(target=self.__keyboardReader)
 		self.daemon = True
+		self.__stopEvent = Event()
 
 	def __keyboardReader(self):
-		while self.__running:
+		while not self.__stopEvent.is_set():
 			self.__keyboardInputParser(input().strip())
 
-	def start(self):
-		self.__running = True
-		super().start()
-
 	def stop(self):
-		self.__running = False
+		self.__stopEvent.set()
