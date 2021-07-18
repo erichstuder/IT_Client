@@ -16,4 +16,14 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import pytest
+import lib.CommandParser as CommandParser
 
+@pytest.mark.skip()
+def test_init(mocker):
+	mocker.patch('builtins.input')
+	ComportHandler_mock = mocker.patch.object(CommandParser, 'ComportHandler')
+	KeyboardReader_mock = mocker.patch.object(CommandParser, 'KeyboardReader')
+	CommandParser.ClientParser()
+	ComportHandler_mock.assert_called_once()
+	KeyboardReader_mock.assert_called_once()
