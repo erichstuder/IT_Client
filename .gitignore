@@ -2,3 +2,5 @@ __pycache__
 *.session
 *.session.swp
 env
+.vscode/
+
