@@ -16,21 +16,51 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import pytest
 import time
 import threading
 import lib.ComportLogger as ComportLogger
 
+@pytest.fixture()
+def comportLogger(mocker):
+	mocker.patch('builtins.input')
+	parser_stub = mocker.stub()
+	comportLogger = ComportLogger.ComportLogger(parser_stub, None)
+	yield comportLogger
+	comportLogger.stop()
+	while comportLogger.is_alive():
+		pass
+
+
+def test_comportLogger_threadCreation(mocker):
+	Thread_mock = mocker.patch.object(ComportLogger.Thread, '__init__')
+	mocker.patch.object(ComportLogger.Thread, 'daemon')
+	comportLogger = ComportLogger.ComportLogger(None, None)
+	Thread_mock.assert_called_once_with(target=mocker.ANY)
+
+
+def test_comportLogger_daemon(comportLogger):
+	assert comportLogger.daemon is True
+
+
+def test_comportLogger_start(comportLogger, mocker):
+	assert comportLogger.is_alive() is False
+	comportLogger.start()
+	assert comportLogger.is_alive() is True
+
+
 def test_comportLogger(mocker, tmpdir):
-	comportHandler_stub = mocker.stub()
 	logValue = b'abc'
+	comportHandler_stub = mocker.stub()
 	mocker.patch.object(comportHandler_stub, 'read', create=True, return_value=logValue)
 	filePath = str(tmpdir)+'/mySession.file'
-	comportLogger = ComportLogger.ComportLogger(comportHandler_stub, filePath)
-	t = threading.Thread(target=comportLogger.run)
-	t.daemon = True
-	t.start()
-	time.sleep(0.1)
-	comportLogger.stop()
 
+	comportLogger = ComportLogger.ComportLogger(comportHandler_stub, filePath)
+	comportLogger.start()
+	time.sleep(0.1)
 	with open(filePath, 'r') as f:
 		assert f.read().startswith(logValue.decode('utf-8'))
+
+	comportLogger.stop()
+	while comportLogger.is_alive():
+		pass
