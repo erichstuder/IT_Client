@@ -22,6 +22,7 @@ import sys
 import logging
 import time
 from lib.ComportAccess import _ComportAccess
+from threading import Lock
 
 class ComportHandlerException(Exception):
 	pass
@@ -34,6 +35,7 @@ class ComportHandler:
 		self.vid = None
 		self.pid = None
 		self.port = None
+		self.__lock = Lock()
 
 
 	def open(self):
@@ -54,14 +56,18 @@ class ComportHandler:
 
 
 	def write(self, data):
+		self.__lock.acquire()
 		if not self.__serialPort.isOpen():
 			self.open()
+		self.__lock.release()
 		self.__serialPort.write(data.encode())
 
 
 	def read(self):
+		self.__lock.acquire()
 		if not self.__serialPort.isOpen():
 			self.open()
+		self.__lock.release()
 		value = self.__serialPort.read(self.__serialPort.inWaiting())
 		if value == b"":
 			return None
