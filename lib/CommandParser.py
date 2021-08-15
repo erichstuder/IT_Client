@@ -17,6 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import time
+import os
+import threading
 
 class CommandParserException(Exception):
 	pass
@@ -28,19 +30,19 @@ class CommandParser:
 	def parse(self, data):
 		if data.startswith("set connectionType "):
 			connectionType = data.split(" ")[2]
-			self.__comPortHandler.setConnectionType(connectionType)
+			self.__comPortHandler.connectionType = connectionType
 			self.__printAnswer("connectionType set to: " + connectionType)
 		elif data.startswith("set VID "):
 			vid = data.split(" ")[2]
-			self.__comPortHandler.setVID(vid)
+			self.__comPortHandler.vid = vid
 			self.__printAnswer("VID set to: " + vid)
 		elif data.startswith("set PID "):
 			pid = data.split(" ")[2]
-			self.__comPortHandler.setPID(pid)
+			self.__comPortHandler.pid = pid
 			self.__printAnswer("PID set to: " + pid)
 		elif data.startswith("set comport "):
 			comPort = data.split(" ")[2]
-			self.__comPortHandler.setPort(comPort)
+			self.__comPortHandler.port = comPort
 			self.__printAnswer("comport set to: " + comPort)
 		elif data.startswith("run "):
 			scriptFileName = data.split(" ")[1]
@@ -72,3 +74,4 @@ class CommandParser:
 		text = text.replace("\n", "\\n")
 		text = text.replace("\r", "\\r")
 		return text """
+
