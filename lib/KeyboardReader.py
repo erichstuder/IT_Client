@@ -21,7 +21,7 @@ from threading import Event
 
 class KeyboardReader(Thread):	
 	def __init__(self, parser):
-		self.__keyboardInputParser = parser
+		self.__keyboardInputParser = parser.parse
 		super().__init__(target=self.__keyboardReader)
 		self.daemon = True
 		self.__stopEvent = Event()
