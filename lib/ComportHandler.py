@@ -73,4 +73,3 @@ class ComportHandler:
 			return None
 		else:
 			return value
-
