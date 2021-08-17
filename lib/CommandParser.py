@@ -19,13 +19,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import time
 import os
 import threading
+import sys
+from queue import Queue
 
 class CommandParserException(Exception):
 	pass
 
 class CommandParser:
-	def __init__(self, comportHandler):
+	def __init__(self, comportHandler, inputQueue: Queue):
 		self.__comPortHandler = comportHandler
+		self.__inputQueue = inputQueue
 
 	def parse(self, data):
 		if data.startswith("set connectionType "):
@@ -53,14 +56,14 @@ class CommandParser:
 			with open(scriptFileName, "r") as scriptFile:
 				if not scriptFileName.endswith(".py"):
 					raise ClientParserException('unsupported file extension')
-				t = threading.Thread(target=lambda: exec(scriptFile.read(), {"send": self.parse}) )
+				t = threading.Thread(target=lambda: exec(scriptFile.read(), {"send": self.__inputQueue.put}) )
 				t.daemon = True
 				t.start()
 								
 		elif data == "exit":
 			self.__printAnswer("goodbye...")
 			time.sleep(0.5)
-			exit() #TODO das Programm sollte nicht hier verlassen werden
+			sys.exit()
 		else:
 			self.__comPortHandler.write(data + "\r")
 
@@ -74,4 +77,3 @@ class CommandParser:
 		text = text.replace("\n", "\\n")
 		text = text.replace("\r", "\\r")
 		return text """
-

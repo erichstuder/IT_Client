@@ -22,6 +22,7 @@ from lib.KeyboardReader import KeyboardReader
 from lib.ComportLogger import ComportLogger
 import sys
 import os
+from queue import Queue
 
 class Client:
 	@classmethod
@@ -33,20 +34,19 @@ class Client:
 		initFile = args['initFile']
 		sessionFile = args['sessionFile']
 
-		comportHandler = ComportHandler()
+		inputQueue = Queue()
+		KeyboardReader(inputQueue).start()
 
-		commandParser = CommandParser(comportHandler)
-		keyboardReader = KeyboardReader(commandParser)
-		keyboardReader.start()
+		comportHandler = ComportHandler()
+		commandParser = CommandParser(comportHandler, inputQueue)
 
 		if initFile != None:
 			commandParser.parse("run " + initFile)
 
-		comportLogger = ComportLogger(comportHandler, sessionFile)
-		comportLogger.start()
-
-		keyboardReader.join()
-		comportLogger.join()
+		ComportLogger(comportHandler, sessionFile).start()
+		while True:
+			data = inputQueue.get(block=True)
+			commandParser.parse(data)
 
 	@staticmethod
 	def _setupWindow():
