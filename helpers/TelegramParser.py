@@ -16,10 +16,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from helpers.TelegramFrameParser import _TelegramFrameParser
-from helpers.TelegramFrameParser import TelegramFrameParserException
-from helpers.TelegramContentParser import _TelegramContentParser
-from helpers.TelegramContentParser import TelegramContentParserException
+from .TelegramFrameParser import _TelegramFrameParser
+from .TelegramFrameParser import TelegramFrameParserException
+from .TelegramContentParser import _TelegramContentParser
+from .TelegramContentParser import TelegramContentParserException
 
 class TelegramParser:
 	@staticmethod
