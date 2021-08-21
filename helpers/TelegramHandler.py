@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .TelegramReader import _TelegramReader
 
-class TelegramParser:
+class TelegramHandler:
 	def __init__(self, sessionFilePath):
 		self.__telegramReader = _TelegramReader(sessionFilePath)
 
