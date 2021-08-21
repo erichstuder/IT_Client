@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
 from .TelegramContentParser import _TelegramContentParser
+from .TelegramContentParser import TelegramContentParserException
 
 
 class TelegramReaderException(Exception):
@@ -26,11 +27,11 @@ class TelegramReaderException(Exception):
 
 class _TelegramReader:
 
-	#TODO: these should be only defined in one place
 	__TelegramStartId = b'\xAA'
 	__TelegramEndId = b'\xBB'
+	__ReplacementMarker = b'\xCC'
 
-	
+
 	def __init__(self, filePath):
 		self.__filePath = filePath
 		self.__fileSize = 0
@@ -43,7 +44,7 @@ class _TelegramReader:
 		if fileSizeTemp != self.__fileSize:
 			self.__fileSize = fileSizeTemp
 			newTelegrams = self.__getNewTelegrams()
-			_TelegramContentParser.parseTelegrams(newTelegrams)
+			self.__parseTelegrams(newTelegrams)
 			self.__telegrams += newTelegrams
 		return self.__telegrams
 
@@ -65,3 +66,41 @@ class _TelegramReader:
 				if byte == self.__TelegramEndId:
 					startNewTelegram = True
 		return telegrams
+
+
+	def __parseTelegrams(self, telegrams):
+		for telegram in telegrams:
+			try:
+				content = self.__extractContent(telegram)
+				contentNoTelegramType = _TelegramContentParser.parseTelegramType(telegram, content)
+				if telegram['telegramType'] == 'value':
+					contentNoValueName = _TelegramContentParser.parseValueName(telegram, contentNoTelegramType)
+					contentNoValueType = _TelegramContentParser.parseValueType(telegram, contentNoValueName)
+					contentNoValue = _TelegramContentParser.parseValue(telegram, contentNoValueType)
+					_TelegramContentParser.parseTimestamp(telegram, contentNoValue)
+				elif telegram['telegramType'] == 'string':
+					_TelegramContentParser.parseString(telegram, contentNoTelegramType)
+				else:
+					raise ValueError('unknown telegram type')
+				telegram["valid"] = True
+			except (TelegramContentParserException, TelegramReaderException):
+				telegram["valid"] = False
+
+
+	def __extractContent(cls, telegram):
+		telegramRaw = telegram['raw']
+		if telegramRaw[0:1] != cls.__TelegramStartId:
+			raise TelegramReaderException('Unexpected Start')
+		if telegramRaw[-1:] != cls.__TelegramEndId:
+			raise TelegramReaderException('Unexpected End')
+		content = b''
+		offset = 0
+		for byte in telegramRaw[1:-1]:
+			if byte == cls.__ReplacementMarker[0]:
+				offset += 1
+			else:
+				content += bytes([byte + offset])
+				offset = 0
+		if offset != 0:
+			raise TelegramReaderException('Unresolvable Replacement Marker')
+		return content
