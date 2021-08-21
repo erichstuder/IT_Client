@@ -20,33 +20,46 @@ class TelegramFrameParserException(Exception):
 	pass
 
 class _TelegramFrameParser:
-	__TelegramStartId = 0xAA
-	__TelegramEndId = 0xBB
-	__ReplacementMarker = 0xCC
+	__TelegramStartId = b'\xAA'
+	__TelegramEndId = b'\xBB'
+	__ReplacementMarker = b'\xCC'
 
-	@classmethod
-	def splitIntoTelegrams(cls, stream: bytes):
-		telegrams = []
+	
+	def __init__(self, filePath):
+		self.__filePath = filePath
+		self.__startIndexOfLastTelegram = 0
+		self.__telegrams = []
+
+
+	def splitIntoTelegrams(self):
 		startNewTelegram = True
-		for byte in stream:
-			if startNewTelegram or byte == cls.__TelegramStartId:
-				startNewTelegram = False
-				telegrams.append({'raw': b''})
-			telegrams[-1]['raw'] += bytes([byte])
-			if byte == cls.__TelegramEndId:
-				startNewTelegram = True
-		return telegrams
+		with open(self.__filePath, 'rb') as sessionFile:
+			self.__telegrams = self.__telegrams[:-1]
+			sessionFile.seek(self.__startIndexOfLastTelegram)
+			while True:
+				byte = sessionFile.read(1)
+				if byte == b'':
+					break
+				if startNewTelegram or byte == self.__TelegramStartId:
+					startNewTelegram = False
+					self.__telegrams.append({'raw': b''})
+					self.__startIndexOfLastTelegram = sessionFile.tell() - 1
+				self.__telegrams[-1]['raw'] += byte
+				if byte == self.__TelegramEndId:
+					startNewTelegram = True
+		return self.__telegrams
+
 
 	@classmethod
 	def extractContent(cls, telegram):
-		if telegram[0] != cls.__TelegramStartId:
+		if telegram[0:1] != cls.__TelegramStartId:
 			raise TelegramFrameParserException('Unexpected Start')
-		if telegram[-1] != cls.__TelegramEndId:
+		if telegram[-1:] != cls.__TelegramEndId:
 			raise TelegramFrameParserException('Unexpected End')
 		content = b''
 		offset = 0
 		for byte in telegram[1:-1]:
-			if byte == cls.__ReplacementMarker:
+			if byte == cls.__ReplacementMarker[0]:
 				offset += 1
 			else:
 				content += bytes([byte + offset])

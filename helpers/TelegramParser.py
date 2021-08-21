@@ -22,6 +22,22 @@ from .TelegramContentParser import _TelegramContentParser
 from .TelegramContentParser import TelegramContentParserException
 
 class TelegramParser:
+	def __init__(self, sessionFilePath):
+		self.__sessionFilePath = sessionFilePath
+		telegramFrameParser = _TelegramFrameParser(sessionFilePath)
+		self.telegrams = telegramFrameParser.splitIntoTelegrams()
+		for telegram in self.telegrams:
+			TelegramParser.__parse(telegram)
+		print(self.telegrams)
+
+
+	def getLastValueByName(self, name):
+		for telegram in reversed(self.telegrams):
+			if telegram['valid'] == True and telegram['telegramType'] == 'value' and telegram['valueName'] == name:
+				return telegram
+		return None
+
+
 	@staticmethod
 	def parseLastValidTypeValueTelegram(data: bytes, valueName):
 		lastDataIndex = len(data)-1
@@ -38,6 +54,7 @@ class TelegramParser:
 				if telegram["valid"] == True and telegram["telegramType"] == "value" and telegram["valueName"] == valueName:
 					return telegram
 		return None
+
 
 	@staticmethod
 	def getTypeValueTelegramsAfterTimestamp(data: bytes, valueName, lowestTimestamp):
@@ -60,6 +77,7 @@ class TelegramParser:
 						telegrams.insert(0, telegram)
 		return telegrams
 
+
 	@classmethod
 	def parseStream(cls, data: bytes):
 		telegrams = _TelegramFrameParser.splitIntoTelegrams(data)
@@ -67,10 +85,11 @@ class TelegramParser:
 			cls.__parse(telegram)
 		return telegrams
 
+
 	@staticmethod
 	def __parse(telegram):
 		try:
-			contentStream = _TelegramFrameParser.extractContent(telegram['raw']) 
+			contentStream = _TelegramFrameParser.extractContent(telegram['raw'])
 			streamNoTelegramType = _TelegramContentParser.parseTelegramType(telegram, contentStream)
 			if telegram['telegramType'] == 'value':
 				streamNoValueName = _TelegramContentParser.parseValueName(telegram, streamNoTelegramType)
@@ -82,5 +101,5 @@ class TelegramParser:
 			else:
 				raise ValueError('unknown telegram type')
 			telegram["valid"] = True
-		except TelegramFrameParserException or TelegramContentParserException:
+		except TelegramFrameParserException or TelegramContentParserException as e:
 			telegram["valid"] = False
