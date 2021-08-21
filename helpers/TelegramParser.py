@@ -23,6 +23,14 @@ class TelegramParser:
 		self.__telegramReader = _TelegramReader(sessionFilePath)
 
 
+	def getValues(self, name):
+		telegrams = []
+		for telegram in self.__telegramReader.getTelegrams():
+			if telegram['valid'] == True and telegram['telegramType'] == 'value' and telegram['valueName'] == name:
+				telegrams += [telegram]
+		return telegrams
+
+
 	def getLastValue(self, name):
 		for telegram in reversed(self.__telegramReader.getTelegrams()):
 			if telegram['valid'] == True and telegram['telegramType'] == 'value' and telegram['valueName'] == name:
@@ -41,5 +49,5 @@ class TelegramParser:
 				if telegram['timestamp'] < lastTimestamp - timestampRange:
 					return telegrams
 				if telegram['telegramType'] == 'value' and telegram['valueName'] == name:
-					telegrams = [telegram] + telegrams
-		return telegrams
+					telegrams += [telegram]
+		return reversed(telegrams)
