@@ -35,7 +35,7 @@ class _TelegramReader:
 		self.__filePath = filePath
 		self.__fileSize = 0
 		self.__startIndexOfLastTelegram = 0
-		self.__telegrams = self.__getNewTelegrams()
+		self.__telegrams = []
 
 
 	def getTelegrams(self):
