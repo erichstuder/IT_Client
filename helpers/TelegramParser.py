@@ -16,23 +16,14 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .TelegramFrameParser import _TelegramFrameParser
-from .TelegramFrameParser import TelegramFrameParserException
-from .TelegramContentParser import _TelegramContentParser
-from .TelegramContentParser import TelegramContentParserException
+from .TelegramReader import _TelegramReader
 
 class TelegramParser:
 	def __init__(self, sessionFilePath):
-		self.__sessionFilePath = sessionFilePath
-		telegramFrameParser = _TelegramFrameParser(sessionFilePath)
-		self.telegrams = telegramFrameParser.splitIntoTelegrams()
-		for telegram in self.telegrams:
-			TelegramParser.__parse(telegram)
-		print(self.telegrams)
-
+		self.__telegramReader = _TelegramReader(sessionFilePath)
 
 	def getLastValueByName(self, name):
-		for telegram in reversed(self.telegrams):
+		for telegram in reversed(self.__telegramReader.getTelegrams()):
 			if telegram['valid'] == True and telegram['telegramType'] == 'value' and telegram['valueName'] == name:
 				return telegram
 		return None

@@ -23,8 +23,52 @@ class TelegramContentParserException(Exception):
 
 class _TelegramContentParser:
 
+	#TODO: these should be only defined in one place
+	__TelegramStartId = b'\xAA'
+	__TelegramEndId = b'\xBB'
+	__ReplacementMarker = b'\xCC'
+
+	@classmethod
+	def parseTelegrams(cls, telegrams):
+		for telegram in telegrams:
+			try:
+				content = cls.__extractContent(telegram['raw'])
+				contentNoTelegramType = _TelegramContentParser.__parseTelegramType(telegram, content)
+				if telegram['telegramType'] == 'value':
+					contentNoValueName = _TelegramContentParser.__parseValueName(telegram, contentNoTelegramType)
+					contentNoValueType = _TelegramContentParser.__parseValueType(telegram, contentNoValueName)
+					contentNoValue = _TelegramContentParser.__parseValue(telegram, contentNoValueType)
+					_TelegramContentParser.__parseTimestamp(telegram, contentNoValue)
+				elif telegram['telegramType'] == 'string':
+					_TelegramContentParser.__parseString(telegram, contentNoTelegramType)
+				else:
+					raise ValueError('unknown telegram type')
+				telegram["valid"] = True
+			except TelegramContentParserException:
+				telegram["valid"] = False
+
+
+	@classmethod
+	def __extractContent(cls, telegramRaw):
+		if telegramRaw[0:1] != cls.__TelegramStartId:
+			raise TelegramContentParserException('Unexpected Start')
+		if telegramRaw[-1:] != cls.__TelegramEndId:
+			raise TelegramContentParserException('Unexpected End')
+		content = b''
+		offset = 0
+		for byte in telegramRaw[1:-1]:
+			if byte == cls.__ReplacementMarker[0]:
+				offset += 1
+			else:
+				content += bytes([byte + offset])
+				offset = 0
+		if offset != 0:
+			raise TelegramContentParserException('Unresolvable Replacement Marker')
+		return content
+
+
 	@staticmethod
-	def parseTelegramType(telegram, telegramStream):
+	def __parseTelegramType(telegram, telegramStream):
 		telegramTypes = {
 			1: 'value',
 			2: 'string',
@@ -38,14 +82,16 @@ class _TelegramContentParser:
 		newTelegramStream = telegramStream[1:]
 		return newTelegramStream
 
+
 	@classmethod
-	def parseValueName(cls, telegram, telegramStream):
+	def __parseValueName(cls, telegram, telegramStream):
 		name, newTelegramStream = cls.__parseString(telegramStream)
 		telegram['valueName'] = name
 		return newTelegramStream
 
+
 	@staticmethod
-	def parseValueType(telegram, telegramStream):
+	def __parseValueType(telegram, telegramStream):
 		valueTypes = {
 			1: 'int8',
 			2: 'uint8',
@@ -60,8 +106,9 @@ class _TelegramContentParser:
 		telegram['valueType'] = valueType
 		return telegramStream[1:]
 
+
 	@classmethod
-	def parseValue(cls, telegram, telegramStream):
+	def __parseValue(cls, telegram, telegramStream):
 		if telegram is None:
 			raise TelegramContentParserException('telegram is None')
 		key = 'valueType'
@@ -89,12 +136,14 @@ class _TelegramContentParser:
 			raise TelegramContentParserException('parsing for value type \'' + str(valueType) + '\' not implemented')
 		return telegramStream[size:]
 
+
 	@classmethod
-	def parseTimestamp(cls, telegram, telegramStream):
+	def __parseTimestamp(cls, telegram, telegramStream):
 		if telegram is None:
 			raise TelegramContentParserException('telegram is None')
 		telegram['timestamp'], size = cls.__parseULong(telegramStream)
 		return telegramStream[size:]
+
 
 	@staticmethod
 	def __parseULong(telegramStream):
@@ -104,13 +153,15 @@ class _TelegramContentParser:
 		value = struct.unpack('L', bytes(telegramStream[:size]))[0]
 		return value, size
 
+
 	@classmethod
-	def parseString(cls, telegram, telegramStream):
+	def __parseString(cls, telegram, telegramStream):
 		if telegram is None:
 			raise TelegramContentParserException('telegram is None')
 		name, newTelegramStream = cls.__parseString(telegramStream)
 		telegram['value'] = name
 		return newTelegramStream
+
 
 	@staticmethod
 	def __parseString(telegramStream):

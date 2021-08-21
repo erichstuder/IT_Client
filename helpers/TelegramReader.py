@@ -16,25 +16,42 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-class TelegramFrameParserException(Exception):
+import os
+from .TelegramContentParser import _TelegramContentParser
+
+
+class TelegramReaderException(Exception):
 	pass
 
-class _TelegramFrameParser:
+
+class _TelegramReader:
+
+	#TODO: these should be only defined in one place
 	__TelegramStartId = b'\xAA'
 	__TelegramEndId = b'\xBB'
-	__ReplacementMarker = b'\xCC'
 
 	
 	def __init__(self, filePath):
 		self.__filePath = filePath
+		self.__fileSize = 0
 		self.__startIndexOfLastTelegram = 0
-		self.__telegrams = []
+		self.__telegrams = self.__getNewTelegrams()
 
 
-	def splitIntoTelegrams(self):
+	def getTelegrams(self):
+		fileSizeTemp = os.path.getsize(self.__filePath)
+		if fileSizeTemp != self.__fileSize:
+			self.__fileSize = fileSizeTemp
+			newTelegrams = self.__getNewTelegrams()
+			_TelegramContentParser.parseTelegrams(newTelegrams)
+			self.__telegrams += newTelegrams
+		return self.__telegrams
+
+
+	def __getNewTelegrams(self):
 		startNewTelegram = True
 		with open(self.__filePath, 'rb') as sessionFile:
-			self.__telegrams = self.__telegrams[:-1]
+			telegrams = []
 			sessionFile.seek(self.__startIndexOfLastTelegram)
 			while True:
 				byte = sessionFile.read(1)
@@ -42,28 +59,9 @@ class _TelegramFrameParser:
 					break
 				if startNewTelegram or byte == self.__TelegramStartId:
 					startNewTelegram = False
-					self.__telegrams.append({'raw': b''})
+					telegrams.append({'raw': b''})
 					self.__startIndexOfLastTelegram = sessionFile.tell() - 1
-				self.__telegrams[-1]['raw'] += byte
+				telegrams[-1]['raw'] += byte
 				if byte == self.__TelegramEndId:
 					startNewTelegram = True
-		return self.__telegrams
-
-
-	@classmethod
-	def extractContent(cls, telegram):
-		if telegram[0:1] != cls.__TelegramStartId:
-			raise TelegramFrameParserException('Unexpected Start')
-		if telegram[-1:] != cls.__TelegramEndId:
-			raise TelegramFrameParserException('Unexpected End')
-		content = b''
-		offset = 0
-		for byte in telegram[1:-1]:
-			if byte == cls.__ReplacementMarker[0]:
-				offset += 1
-			else:
-				content += bytes([byte + offset])
-				offset = 0
-		if offset != 0:
-			raise TelegramFrameParserException('Unresolvable Replacement Marker')
-		return content
+		return telegrams
