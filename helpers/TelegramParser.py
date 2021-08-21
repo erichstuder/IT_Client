@@ -50,4 +50,4 @@ class TelegramParser:
 					return telegrams
 				if telegram['telegramType'] == 'value' and telegram['valueName'] == name:
 					telegrams += [telegram]
-		return reversed(telegrams)
+		return list(reversed(telegrams))
