@@ -38,16 +38,19 @@ def test_keyboardReader_threadCreation(mocker):
 	Thread_mock.assert_called_once_with(target=mocker.ANY)
 
 
+@pytest.mark.skip()
 def test_keyboardReader_daemon(keyboardReader):
 	assert keyboardReader.daemon is True
 
 
+@pytest.mark.skip()
 def test_keyboarReader_start(keyboardReader, mocker):
 	assert keyboardReader.is_alive() is False
 	keyboardReader.start()
 	assert keyboardReader.is_alive() is True
 	
 
+@pytest.mark.skip()
 def test_keyboardReader(mocker):
 	inputValue = 'a'
 	input_mock = mocker.patch('builtins.input', return_value=inputValue)
