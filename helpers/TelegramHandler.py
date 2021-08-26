@@ -45,9 +45,9 @@ class TelegramHandler:
 			return None
 		lastTimestamp = lastTelegram['timestamp']
 		for telegram in reversed(self.__telegramReader.getTelegrams()):
-			if telegram['valid'] == True:
+			if telegram['valid'] == True and telegram['telegramType'] == 'value':
 				if telegram['timestamp'] < lastTimestamp - timestampRange:
 					return telegrams
-				if telegram['telegramType'] == 'value' and telegram['valueName'] == name:
+				if telegram['valueName'] == name:
 					telegrams += [telegram]
 		return list(reversed(telegrams))

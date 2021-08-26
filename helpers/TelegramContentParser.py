@@ -40,8 +40,8 @@ class _TelegramContentParser:
 
 	@classmethod
 	def parseValueName(cls, telegram, telegramStream):
-		name, newTelegramStream = cls.__parseString(telegramStream)
-		telegram['valueName'] = name
+		text, newTelegramStream = cls.__extractString(telegramStream)
+		telegram['valueName'] = text
 		return newTelegramStream
 
 
@@ -110,21 +110,21 @@ class _TelegramContentParser:
 
 
 	@classmethod
-	def __parseString(cls, telegram, telegramStream):
+	def parseString(cls, telegram, telegramStream):
 		if telegram is None:
 			raise TelegramContentParserException('telegram is None')
-		name, newTelegramStream = cls.__parseString(telegramStream)
-		telegram['value'] = name
+		text, newTelegramStream = cls.__extractString(telegramStream)
+		telegram['value'] = text
 		return newTelegramStream
 
 
 	@staticmethod
-	def __parseString(telegramStream):
+	def __extractString(telegramStream):
 		string = ''
 		stringLength = 0
 		for byte in telegramStream:
 			if byte == 0:
-				if len(string) < 2:
+				if len(string) <= 1:
 					raise TelegramContentParserException('string is empty')
 				return string, telegramStream[stringLength+1:]
 			string += chr(byte)
