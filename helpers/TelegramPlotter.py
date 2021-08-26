@@ -23,41 +23,55 @@ class TelegramPlotterException(Exception):
 
 
 class TelegramPlotter:
-	def __init__(self):
+	def __init__(self, title):
+		self.__plotTitle = title
 		plt.ion()
 		plt.style.use('dark_background')
 		self.__plotData = {}
+		self.__id = 0
+		self.__plotNumber = 1
 
 
-	def plot(self, telegrams):
-		name = telegrams[0]['valueName']
-		if name not in self.__plotData:
-			self.__plotData[name] = {}
-		value = []
-		timestamp = []
-		for telegram in telegrams:
-			if telegram['valueName'] != name:
-				raise TelegramPlotterException('Telegrams must all have the same name.')
-			if telegram['valid'] != True:
-				raise TelegramPlotterException('Telegrams must all be valid.')
-			value += [telegram['value']]
-			timestamp += [telegram['timestamp']]
-		self.__plotData[name]['value'] = value
-		self.__plotData[name]['timestamp'] = timestamp
+	def plot(self, *telegramsList):
+		for telegrams in telegramsList:
+			name = telegrams[0]['valueName']
+			if name not in self.__plotData:
+				self.__plotData[self.__id] = {}
+			value = []
+			timestamp = []
+			for telegram in telegrams:
+				if telegram['valueName'] != name:
+					raise TelegramPlotterException('Telegrams must all have the same name.')
+				if telegram['valid'] != True:
+					raise TelegramPlotterException('Telegrams must all be valid.')
+				value += [telegram['value']]
+				timestamp += [telegram['timestamp']]
+			self.__plotData[self.__id]['value'] = value
+			self.__plotData[self.__id]['timestamp'] = timestamp
+			self.__plotData[self.__id]['plotNumber'] = self.__plotNumber
+			self.__plotData[self.__id]['name'] = name
+			self.__id += 1
+		self.__plotNumber += 1
 
 
 	def update(self):
-		figure = plt.figure(num='myPlot', figsize=(8, 4))
+		figure = plt.figure(num=self.__plotTitle, figsize=(8, 4))
 		plt.clf()
-		plt.grid(color='grey')
+		plotNumber = 0
+		legendStrings = []
 		for key in self.__plotData:
 			value = self.__plotData[key]['value']
 			timestamp = self.__plotData[key]['timestamp']
+			if plotNumber != self.__plotData[key]['plotNumber']:
+				plotNumber = self.__plotData[key]['plotNumber']
+				plt.subplot(self.__plotNumber-1, 1, plotNumber)
+				plt.ticklabel_format(useOffset=False)
+				legendStrings = []
+			plt.grid(color='grey')
 			plt.step(timestamp, value, where='post')
+			legendStrings.append(self.__plotData[key]['name'])
+			plt.legend(legendStrings, loc='lower left')
 		figure.canvas.flush_events()
-
-		# desiredValue_timeSeconds = [x/1e6 for x in desiredValue_time]
-		# actualValue_timeSeconds = [x/1e6 for x in actualValue_time]
-
-		# plt.legend(['desiredValue', 'actualValue'], loc='lower left')
-		# plt.xlabel('time [s]')
+		self.__plotData = {}
+		self.__id = 0
+		self.__plotNumber = 1
