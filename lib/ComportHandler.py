@@ -27,6 +27,10 @@ from threading import Lock
 class ComportHandlerException(Exception):
 	pass
 
+class UnsupportedConnectionType(ComportHandlerException):
+	pass
+
+
 class ComportHandler:
 	def __init__(self):
 		self.__serialPort = serial.Serial(None)
@@ -46,7 +50,7 @@ class ComportHandler:
 			#TODO: Darf nicht aufgerufen werden, solange port nicht gesetzt wurde.
 			self.__serialPort.setPort(self.port)
 		else:
-			raise ComportHandlerException("unsupported connectionType: " + str(self.connectionType))
+			raise UnsupportedConnectionType(self.connectionType)
 	
 		self.__serialPort.open()
 		timeout = time.time() + 3

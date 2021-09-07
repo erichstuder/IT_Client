@@ -19,6 +19,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from threading import Thread
 from queue import Queue
 
+from lib.ComportHandler import ComportHandlerException
+from lib.ComportHandler import UnsupportedConnectionType
+
 class ExceptionHandler(Thread):	
 	def __init__(self, exceptionQueue: Queue):
 		self.__exceptionQueue = exceptionQueue
@@ -28,4 +31,14 @@ class ExceptionHandler(Thread):
 	def __exceptionHandler(self):
 		while True:
 			exception = self.__exceptionQueue.get(block=True)
-			raise exception
+			assert isinstance(exception, Exception)
+			if isinstance(exception, ComportHandlerException):
+				if isinstance(exception, UnsupportedConnectionType):
+					print('Error: ' + UnsupportedConnectionType.__name__)
+					print('The comport connection type is unsupported: ' + str(exception))
+					print('Possible causes:')
+					print(' 1. Connection type not set.')
+					print(' 2. Connection type set to an invalid value.')
+					print()
+			else:
+				raise exception
