@@ -20,17 +20,29 @@ import time
 import os
 import threading
 import sys
+from threading import Thread
 from queue import Queue
 
 class CommandParserException(Exception):
 	pass
 
-class CommandParser:
-	def __init__(self, comportHandler, inputQueue: Queue):
+class CommandParser(Thread):
+	def __init__(self, comportHandler, commandQueue: Queue, exceptionQueue: Queue):
 		self.__comPortHandler = comportHandler
-		self.__inputQueue = inputQueue
+		self.__commandQueue = commandQueue
+		self.__exceptionQueue = exceptionQueue
+		super().__init__(target=self.__commandParser)
+		self.daemon = True
 
-	def parse(self, data):
+	def __commandParser(self):
+		while True:
+			try:
+				cmd = self.__commandQueue.get(block=True)
+				self.__parse(cmd)
+			except Exception as e:
+				self.__exceptionQueue.put(e)
+
+	def __parse(self, data):
 		if data.startswith("set connectionType "):
 			connectionType = data.split(" ")[2]
 			self.__comPortHandler.connectionType = connectionType
@@ -56,7 +68,7 @@ class CommandParser:
 			with open(scriptFileName, "r") as scriptFile:
 				if not scriptFileName.endswith(".py"):
 					raise ClientParserException('unsupported file extension')
-				t = threading.Thread(target=lambda: exec(scriptFile.read(), {"send": self.__inputQueue.put}) )
+				t = threading.Thread(target=lambda: exec(scriptFile.read(), {"send": self.__commandQueue.put}) )
 				t.daemon = True
 				t.start()
 								
