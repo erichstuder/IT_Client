@@ -40,8 +40,10 @@ class ComportHandler:
 
 	def open(self):
 		if self.connectionType == "USB_RS232":
+			#TODO: Darf nicht aufgerufen werden, solange vid und pid nicht gesetzt wurden.
 			self.__serialPort.setPort(_ComportAccess.findPortByVidAndPid(vid=self.vid, pid=self.pid))
 		elif self.connectionType == "RS232":
+			#TODO: Darf nicht aufgerufen werden, solange port nicht gesetzt wurde.
 			self.__serialPort.setPort(self.port)
 		else:
 			raise ComportHandlerException("unsupported connectionType: " + str(self.connectionType))
@@ -56,10 +58,12 @@ class ComportHandler:
 
 
 	def write(self, data):
-		self.__lock.acquire()
-		if not self.__serialPort.isOpen():
-			self.open()
-		self.__lock.release()
+		try:
+			self.__lock.acquire()
+			if not self.__serialPort.isOpen():
+				self.open()
+		finally:
+			self.__lock.release()
 		self.__serialPort.write(data.encode())
 
 
