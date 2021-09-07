@@ -38,10 +38,10 @@ class Client:
 		commandQueue = Queue()
 		exceptionQueue = Queue()
 
-		KeyboardReader(commandQueue).start()
-
 		if initFile != None:
 			commandQueue.put("run " + initFile)
+
+		KeyboardReader(commandQueue).start()
 
 		comportHandler = ComportHandler()
 		ComportLogger(comportHandler, sessionFile).start()
