@@ -72,10 +72,12 @@ class ComportHandler:
 
 
 	def read(self):
-		self.__lock.acquire()
-		if not self.__serialPort.isOpen():
-			self.open()
-		self.__lock.release()
+		try:
+			self.__lock.acquire()
+			if not self.__serialPort.isOpen():
+				self.open()
+		finally:
+			self.__lock.release()
 		value = self.__serialPort.read(self.__serialPort.inWaiting())
 		if value == b"":
 			return None
