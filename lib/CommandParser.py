@@ -46,19 +46,19 @@ class CommandParser(Thread):
 		if data.startswith("set connectionType "):
 			connectionType = data.split(" ")[2]
 			self.__comPortHandler.connectionType = connectionType
-			self.__printAnswer("connectionType set to: " + connectionType)
+			print("connectionType set to: " + connectionType)
 		elif data.startswith("set VID "):
 			vid = data.split(" ")[2]
 			self.__comPortHandler.vid = vid
-			self.__printAnswer("VID set to: " + vid)
+			print("VID set to: " + vid)
 		elif data.startswith("set PID "):
 			pid = data.split(" ")[2]
 			self.__comPortHandler.pid = pid
-			self.__printAnswer("PID set to: " + pid)
+			print("PID set to: " + pid)
 		elif data.startswith("set comport "):
 			comPort = data.split(" ")[2]
 			self.__comPortHandler.port = comPort
-			self.__printAnswer("comport set to: " + comPort)
+			print("comport set to: " + comPort)
 		elif data.startswith("run "):
 			scriptFileName = data.split(" ")[1]
 
@@ -73,19 +73,8 @@ class CommandParser(Thread):
 				t.start()
 								
 		elif data == "exit":
-			self.__printAnswer("goodbye...")
+			print("goodbye...")
 			time.sleep(0.5)
 			sys.exit()
 		else:
 			self.__comPortHandler.write(data + "\r")
-
-	@staticmethod
-	def __printAnswer(answer):
-		print(">>  " + answer)
-
-
-#kann das hier verwendet werden?
-""" 	def __replaceEscapes(self, text):
-		text = text.replace("\n", "\\n")
-		text = text.replace("\r", "\\r")
-		return text """
