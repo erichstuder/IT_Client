@@ -21,6 +21,7 @@ from threading import Event
 from queue import Queue
 import time
 from lib.ComportHandler import ComportHandlerException
+from lib.ComportAccess import ComportAccessException
 
 
 class ComportLogger(Thread):
@@ -41,7 +42,7 @@ class ComportLogger(Thread):
 					if self.__isSuspended:
 						self.__isSuspended = False
 						print('Comport Logger started.\n')
-				except ComportHandlerException as e:
+				except (ComportHandlerException, ComportAccessException) as e:
 					if not self.__isSuspended:
 						self.__isSuspended = True
 						print('Comport Logger suspended.\n')

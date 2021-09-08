@@ -22,6 +22,9 @@ from queue import Queue
 from lib.ComportHandler import ComportHandlerException
 from lib.ComportHandler import UnsupportedConnectionType
 
+from lib.ComportAccess import ComportAccessException
+from lib.ComportAccess import NoDeviceFound
+
 class ExceptionHandler(Thread):	
 	def __init__(self, exceptionQueue: Queue):
 		self.__exceptionQueue = exceptionQueue
@@ -39,6 +42,13 @@ class ExceptionHandler(Thread):
 					print('Possible causes:')
 					print(' 1. Connection type not set.')
 					print(' 2. Connection type set to an invalid value.')
+					print()
+			elif isinstance(exception, ComportAccessException):
+				if isinstance(exception, NoDeviceFound):
+					print('Error: ' + NoDeviceFound.__name__)
+					print('The com device was not found.')
+					print('Possible causes:')
+					print(' 1. The device is not connected.')
 					print()
 			else:
 				raise exception
