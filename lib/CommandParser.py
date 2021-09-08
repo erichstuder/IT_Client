@@ -46,19 +46,19 @@ class CommandParser(Thread):
 		if data.startswith('set connectionType '):
 			connectionType = data.split(' ')[2]
 			self.__comPortHandler.connectionType = connectionType
-			print('connectionType set to: ' + connectionType)
+			print('connectionType set to: ' + connectionType + '\n')
 		elif data.startswith('set VID '):
 			vid = data.split(' ')[2]
 			self.__comPortHandler.vid = vid
-			print('VID set to: ' + vid)
+			print('VID set to: ' + vid + '\n')
 		elif data.startswith('set PID '):
 			pid = data.split(' ')[2]
 			self.__comPortHandler.pid = pid
-			print('PID set to: ' + pid)
+			print('PID set to: ' + pid + '\n')
 		elif data.startswith('set comport '):
 			comPort = data.split(' ')[2]
 			self.__comPortHandler.port = comPort
-			print('comport set to: ' + comPort)
+			print('comport set to: ' + comPort + '\n')
 		elif data.startswith('run '):
 			scriptFileName = data.split(' ')[1]
 
