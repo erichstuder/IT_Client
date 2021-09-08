@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import time
 import os
 import threading
-import sys
 from threading import Thread
 from queue import Queue
 
@@ -33,9 +32,10 @@ class CommandParser(Thread):
 		self.__exceptionQueue = exceptionQueue
 		super().__init__(target=self.__commandParser)
 		self.daemon = True
+		self.__isRunning = True
 
 	def __commandParser(self):
-		while True:
+		while self.__isRunning:
 			try:
 				cmd = self.__commandQueue.get(block=True)
 				self.__parse(cmd)
@@ -75,6 +75,6 @@ class CommandParser(Thread):
 		elif data == "exit":
 			print("goodbye...")
 			time.sleep(0.5)
-			sys.exit()
+			self.__isRunning = False
 		else:
 			self.__comPortHandler.write(data + "\r")
