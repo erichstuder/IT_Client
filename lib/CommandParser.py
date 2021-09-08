@@ -1,4 +1,4 @@
-"""
+'''
 IT - Internal Tracer
 Copyright (C) 2019 Erich Studer
 
@@ -14,7 +14,7 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
+'''
 
 import time
 import os
@@ -43,38 +43,38 @@ class CommandParser(Thread):
 				self.__exceptionQueue.put(e)
 
 	def __parse(self, data):
-		if data.startswith("set connectionType "):
-			connectionType = data.split(" ")[2]
+		if data.startswith('set connectionType '):
+			connectionType = data.split(' ')[2]
 			self.__comPortHandler.connectionType = connectionType
-			print("connectionType set to: " + connectionType)
-		elif data.startswith("set VID "):
-			vid = data.split(" ")[2]
+			print('connectionType set to: ' + connectionType)
+		elif data.startswith('set VID '):
+			vid = data.split(' ')[2]
 			self.__comPortHandler.vid = vid
-			print("VID set to: " + vid)
-		elif data.startswith("set PID "):
-			pid = data.split(" ")[2]
+			print('VID set to: ' + vid)
+		elif data.startswith('set PID '):
+			pid = data.split(' ')[2]
 			self.__comPortHandler.pid = pid
-			print("PID set to: " + pid)
-		elif data.startswith("set comport "):
-			comPort = data.split(" ")[2]
+			print('PID set to: ' + pid)
+		elif data.startswith('set comport '):
+			comPort = data.split(' ')[2]
 			self.__comPortHandler.port = comPort
-			print("comport set to: " + comPort)
-		elif data.startswith("run "):
-			scriptFileName = data.split(" ")[1]
+			print('comport set to: ' + comPort)
+		elif data.startswith('run '):
+			scriptFileName = data.split(' ')[1]
 
 			if not os.path.isfile(scriptFileName):
 				raise CommandParserException('error: file not found')
 
-			with open(scriptFileName, "r") as scriptFile:
-				if not scriptFileName.endswith(".py"):
+			with open(scriptFileName, 'r') as scriptFile:
+				if not scriptFileName.endswith('.py'):
 					raise CommandParserException('unsupported file extension')
-				t = threading.Thread(target=lambda: exec(scriptFile.read(), {"send": self.__commandQueue.put}) )
+				t = threading.Thread(target=lambda: exec(scriptFile.read(), {'send': self.__commandQueue.put}) )
 				t.daemon = True
 				t.start()
 								
-		elif data == "exit":
-			print("goodbye...")
+		elif data == 'exit':
+			print('goodbye...')
 			time.sleep(0.5)
 			self.__isRunning = False
 		else:
-			self.__comPortHandler.write(data + "\r")
+			self.__comPortHandler.write(data + '\r')
