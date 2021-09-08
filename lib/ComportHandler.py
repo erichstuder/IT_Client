@@ -30,6 +30,9 @@ class ComportHandlerException(Exception):
 class UnsupportedConnectionType(ComportHandlerException):
 	pass
 
+class ReadError(ComportHandlerException):
+	pass
+
 
 class ComportHandler:
 	def __init__(self):
@@ -78,7 +81,12 @@ class ComportHandler:
 				self.open()
 		finally:
 			self.__lock.release()
-		value = self.__serialPort.read(self.__serialPort.inWaiting())
+		try:
+			waitingBytes = self.__serialPort.inWaiting()
+		except OSError:
+			self.__serialPort.close()
+			raise ReadError()
+		value = self.__serialPort.read(size=waitingBytes)
 		if value == b"":
 			return None
 		else:
