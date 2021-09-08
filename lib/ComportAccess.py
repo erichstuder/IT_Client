@@ -21,6 +21,9 @@ import pyudev
 class ComportAccessException(Exception):
 	pass
 
+class NoDeviceFound(ComportAccessException):
+	pass
+
 class _ComportAccess:
 	@staticmethod
 	def findPortByVidAndPid(vid, pid):
@@ -30,7 +33,7 @@ class _ComportAccess:
 			if d.get("ID_MODEL_ID") == pid:
 				devices += [d]
 		if len(devices) == 0:
-			raise ComportAccessException("no device found")
+			raise NoDeviceFound()
 		if len(devices) > 1:
 			raise ComportAccessException("more than one device found")
 		return devices[0].device_node	
