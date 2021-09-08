@@ -18,22 +18,39 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from threading import Thread
 from threading import Event
+from queue import Queue
+import time
+from lib.ComportHandler import ComportHandlerException
+
 
 class ComportLogger(Thread):
-	def __init__(self, comportHandler, logFile):
+	def __init__(self, comportHandler, logFile, exceptionQueue: Queue):
 		self.__comportHandler = comportHandler
 		self.__logFile = logFile
+		self.__exceptionQueue = exceptionQueue
 		self.__stopEvent = Event()
+		self.__isSuspended = False
 		super().__init__(target=self.__logComport)
 		self.daemon = True
 
 	def __logComport(self):
 		with open(self.__logFile, "a+b") as logFile:
 			while not self.__stopEvent.is_set():
-				data = self.__comportHandler.read()
-				if data is not None:
-					logFile.write(data)
-					logFile.flush()
+				try:
+					data = self.__comportHandler.read()
+					if self.__isSuspended:
+						self.__isSuspended = False
+						print('Comport Logger resumed.\n')
+				except ComportHandlerException as e:
+					if not self.__isSuspended:
+						self.__isSuspended = True
+						print('Comport Logger suspended.\n')
+						self.__exceptionQueue.put(e)
+					time.sleep(0.1)
+				else:
+					if data is not None:
+						logFile.write(data)
+						logFile.flush()
 
 	def stop(self):
 		self.__stopEvent.set()

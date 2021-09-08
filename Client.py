@@ -44,7 +44,7 @@ class Client:
 		KeyboardReader(commandQueue).start()
 
 		comportHandler = ComportHandler()
-		ComportLogger(comportHandler, sessionFile).start()
+		ComportLogger(comportHandler, sessionFile, exceptionQueue).start()
 
 		ExceptionHandler(exceptionQueue).start()
 
