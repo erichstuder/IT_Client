@@ -40,7 +40,7 @@ class ComportLogger(Thread):
 					data = self.__comportHandler.read()
 					if self.__isSuspended:
 						self.__isSuspended = False
-						print('Comport Logger resumed.\n')
+						print('Comport Logger started.\n')
 				except ComportHandlerException as e:
 					if not self.__isSuspended:
 						self.__isSuspended = True
