@@ -29,7 +29,7 @@ class ComportLogger(Thread):
 		self.__logFile = logFile
 		self.__exceptionQueue = exceptionQueue
 		self.__stopEvent = Event()
-		self.__isSuspended = False
+		self.__isSuspended = True
 		super().__init__(target=self.__logComport)
 		self.daemon = True
 
