@@ -29,7 +29,7 @@ class Client:
 	@classmethod
 	def start(cls):
 		cls._setupWindow()
-		print("client started")
+		print("Client started\n")
 
 		args = cls._parseArguments()
 		initFile = args['initFile']
