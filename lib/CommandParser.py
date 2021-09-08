@@ -63,11 +63,11 @@ class CommandParser(Thread):
 			scriptFileName = data.split(" ")[1]
 
 			if not os.path.isfile(scriptFileName):
-				raise ClientParserException('error: file not found')
+				raise CommandParserException('error: file not found')
 
 			with open(scriptFileName, "r") as scriptFile:
 				if not scriptFileName.endswith(".py"):
-					raise ClientParserException('unsupported file extension')
+					raise CommandParserException('unsupported file extension')
 				t = threading.Thread(target=lambda: exec(scriptFile.read(), {"send": self.__commandQueue.put}) )
 				t.daemon = True
 				t.start()
