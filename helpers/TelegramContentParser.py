@@ -105,7 +105,7 @@ class _TelegramContentParser:
 		size = 4
 		if len(telegramStream) < size:
 			raise TelegramContentParserException('not enough bytes to parse ulong')
-		value = struct.unpack('L', bytes(telegramStream[:size]))[0]
+		value = struct.unpack('=L', bytes(telegramStream[:size]))[0]
 		return value, size
 
 
