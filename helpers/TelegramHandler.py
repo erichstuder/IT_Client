@@ -37,12 +37,11 @@ class TelegramHandler:
 				return telegram
 		return None
 
-
 	def getLastValues(self, name, timestampRange):
 		telegrams = []
 		lastTelegram = self.getLastValue(name)
 		if lastTelegram is None:
-			return None
+			return []
 		lastTimestamp = lastTelegram['timestamp']
 		for telegram in reversed(self.__telegramReader.getTelegrams()):
 			if telegram['valid'] == True and telegram['telegramType'] == 'value':
