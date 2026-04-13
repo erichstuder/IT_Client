@@ -1,5 +1,5 @@
 pyserial==3.5
 pyudev==0.22.0
 matplotlib==3.4.3
-pytest==6.2.5
+pytest==9.0.3
 pytest-mock==3.6.1
